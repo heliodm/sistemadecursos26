@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $inscrito = isset($_GET['inscrito']);
-$pageTitle = h($curso['nome']) . ' - ' . getConfig('site_nome', 'Sistema de Cursos');
+$pageTitle = $curso['nome'] . ' - ' . getConfig('site_nome', 'Sistema de Cursos');
 $pageDesc  = $curso['descricao_curta'] ?: mb_substr(strip_tags($curso['descricao'] ?? ''), 0, 160);
 
 // Opções de pagamento habilitadas
@@ -267,7 +267,7 @@ require_once __DIR__ . '/includes/header.php';
               <div class="col-md-6">
                 <label class="form-label" for="cpf">CPF <span style="color:var(--accent)">*</span></label>
                 <input type="text" class="form-control" id="cpf" name="cpf"
-                       value="<?= $formData['cpf'] ?? '' ?>" required maxlength="14"
+                       value="<?= h($formData['cpf'] ?? '') ?>" required maxlength="14"
                        placeholder="000.000.000-00">
               </div>
               <div class="col-md-6">

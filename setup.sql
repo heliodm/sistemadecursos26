@@ -75,9 +75,7 @@ CREATE TABLE `usuarios` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Usuário admin padrão (senha: Admin@123)
-INSERT INTO `usuarios` (`nome`, `email`, `senha`, `tipo`) VALUES
-('Administrador', 'admin@sistema.com', '$2y$12$9eGY7JVFOqkpHCLj7S4tMeLr3KQIpSqiANAP3ORCJLelHpuJmQ1sO', 'admin');
+-- Usuário administrador criado pelo instalador (install.php)
 
 -- Tabela de cursos
 CREATE TABLE `cursos` (

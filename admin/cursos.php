@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($nome)) $erros[] = 'Nome do curso é obrigatório.';
             if (strlen($descCurta) > 500) $erros[] = 'Descrição curta deve ter no máximo 500 caracteres.';
 
-            // Slug
-            $slug = gerarSlugUnico($nome, $postAcao === 'editar' ? $cursoId : null);
+            // Slug (somente se nome válido)
+            $slug = !empty($nome) ? gerarSlugUnico($nome, $postAcao === 'editar' ? $cursoId : null) : '';
 
             // Uploads
             $capaFoto  = null;

@@ -25,7 +25,7 @@ if ($tipo && in_array($tipo, ['presencial', 'online'], true)) {
 }
 
 $whereSQL = 'WHERE ' . implode(' AND ', $where);
-$stmt = $db->prepare("SELECT * FROM cursos $whereSQL ORDER BY c.data_hora ASC, c.criado_em DESC");
+$stmt = $db->prepare("SELECT c.* FROM cursos c $whereSQL ORDER BY c.data_hora ASC, c.criado_em DESC");
 $stmt->execute($params);
 $cursos = $stmt->fetchAll();
 

@@ -13,13 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $inscricaoId = (int)($_POST['inscricao_id'] ?? 0);
 
     if ($postAcao === 'emitir' && $inscricaoId > 0) {
-        // Verificar se já existe
-        $sCheck = $db->prepare("SELECT id FROM certificados WHERE inscricao_id = ?");
-        $sCheck->execute([$inscricaoId]);
-        if ($sCheck->fetch()) {
-            redirect('/admin/certificados.php', 'Certificado já emitido para esta inscrição.', 'warning');
-        }
-
         $sIns = $db->prepare("SELECT i.*, c.id AS curso_id FROM inscricoes i JOIN cursos c ON c.id = i.curso_id WHERE i.id = ? AND i.status_pagamento = 'confirmado'");
         $sIns->execute([$inscricaoId]);
         $ins = $sIns->fetch();
@@ -27,12 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('/admin/certificados.php', 'Inscrição não encontrada ou pagamento não confirmado.', 'danger');
         }
 
-        $codigo = gerarCodigoCertificado();
-        $db->prepare("INSERT INTO certificados (inscricao_id, curso_id, codigo_unico, nome_completo) VALUES (?,?,?,?)")
-            ->execute([$inscricaoId, $ins['curso_id'], $codigo, $ins['nome_completo']]);
-        $db->prepare("UPDATE inscricoes SET certificado_emitido = 1 WHERE id = ?")->execute([$inscricaoId]);
-
-        redirect('/admin/certificados.php', 'Certificado emitido! Código: ' . $codigo, 'success');
+        // Inserção atômica: UNIQUE KEY em inscricao_id previne duplicatas por race condition
+        try {
+            $codigo = gerarCodigoCertificado();
+            $db->prepare("INSERT INTO certificados (inscricao_id, curso_id, codigo_unico, nome_completo) VALUES (?,?,?,?)")
+                ->execute([$inscricaoId, $ins['curso_id'], $codigo, $ins['nome_completo']]);
+            $db->prepare("UPDATE inscricoes SET certificado_emitido = 1 WHERE id = ?")->execute([$inscricaoId]);
+            redirect('/admin/certificados.php', 'Certificado emitido! Código: ' . $codigo, 'success');
+        } catch (PDOException $e) {
+            // Violação de UNIQUE = certificado já existe
+            redirect('/admin/certificados.php', 'Certificado já emitido para esta inscrição.', 'warning');
+        }
     }
 
     if ($postAcao === 'invalidar') {

@@ -79,8 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($postAcao === 'deletar') {
         $id = (int)$_POST['id'];
-        if ($id === (int)$usuario['id']) {
-            redirect('/admin/usuarios.php', 'Você não pode se deletar.', 'danger');
+        $usuarioLogado = getUsuarioLogado();
+        if ($id === (int)($usuarioLogado['id'] ?? 0)) {
+            redirect('/admin/usuarios.php', 'Você não pode remover sua própria conta.', 'danger');
         }
         $db->prepare("DELETE FROM usuarios WHERE id = ?")->execute([$id]);
         redirect('/admin/usuarios.php', 'Usuário removido.', 'success');

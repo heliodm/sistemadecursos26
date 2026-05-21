@@ -49,12 +49,8 @@ $replacements = [
 $textoFinal    = str_replace(array_keys($replacements), array_values($replacements), $texto);
 $validFinal    = str_replace(array_keys($replacements), array_values($replacements), $validText);
 
-if ($download) {
-    // Para download, usar mPDF ou simplesmente mandar para impressão
-    // Marcamos com print mode
-    $printMode = true;
-}
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
