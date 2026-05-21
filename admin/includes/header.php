@@ -1,0 +1,151 @@
+<?php
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/auth.php';
+
+requireLogin('/login.php');
+
+$usuario  = getUsuarioLogado();
+$siteName = getConfig('site_nome', 'Sistema de Cursos');
+$siteLogo = urlImagem(getConfig('site_logo'), '');
+$pageTitle = $pageTitle ?? 'Painel Admin';
+$csrf      = gerarCSRF();
+
+// Estatísticas rápidas para sidebar
+$db = getDB();
+$stmtPend = $db->query("SELECT COUNT(*) FROM inscricoes WHERE status_pagamento = 'pendente'");
+$pendentes = (int)$stmtPend->fetchColumn();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="<?= h($csrf) ?>">
+  <title><?= h($pageTitle) ?> - <?= h($siteName) ?></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+<!-- Overlay Mobile -->
+<div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- Sidebar -->
+<aside class="admin-sidebar" id="admin-sidebar">
+  <a class="sidebar-brand" href="/admin/index.php">
+    <?php if ($siteLogo): ?>
+    <img src="<?= h($siteLogo) ?>" alt="<?= h($siteName) ?>">
+    <?php else: ?>
+    <div style="width:40px;height:40px;background:var(--secondary);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="bi bi-mortarboard-fill" style="color:#fff;font-size:1.2rem;"></i>
+    </div>
+    <?php endif; ?>
+    <div>
+      <span class="brand-name"><?= h($siteName) ?></span>
+      <span class="brand-sub">Painel Admin</span>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav">
+    <?php
+    $current = basename($_SERVER['PHP_SELF'], '.php');
+    $currentDir = basename(dirname($_SERVER['PHP_SELF']));
+    function isActive(string $page, string $current): string {
+      return $current === $page ? 'active' : '';
+    }
+    ?>
+
+    <div class="sidebar-section-label">Principal</div>
+    <a href="/admin/index.php" class="sidebar-link <?= isActive('index', $current) ?>">
+      <i class="bi bi-grid-fill"></i> Dashboard
+    </a>
+
+    <div class="sidebar-section-label">Conteúdo</div>
+    <a href="/admin/cursos.php" class="sidebar-link <?= isActive('cursos', $current) ?>">
+      <i class="bi bi-mortarboard-fill"></i> Cursos
+    </a>
+    <a href="/admin/cursos.php?acao=criar" class="sidebar-link <?= isActive('curso-criar', $current) ?>">
+      <i class="bi bi-plus-circle"></i> Novo Curso
+    </a>
+
+    <div class="sidebar-section-label">Gestão</div>
+    <a href="/admin/inscricoes.php" class="sidebar-link <?= isActive('inscricoes', $current) ?>">
+      <i class="bi bi-people-fill"></i> Inscrições
+      <?php if ($pendentes > 0): ?>
+      <span class="badge bg-warning text-dark"><?= $pendentes ?></span>
+      <?php endif; ?>
+    </a>
+    <a href="/admin/pagamentos.php" class="sidebar-link <?= isActive('pagamentos', $current) ?>">
+      <i class="bi bi-cash-coin"></i> Pagamentos
+    </a>
+    <a href="/admin/certificados.php" class="sidebar-link <?= isActive('certificados', $current) ?>">
+      <i class="bi bi-patch-check-fill"></i> Certificados
+    </a>
+
+    <?php if (isAdmin()): ?>
+    <div class="sidebar-section-label">Sistema</div>
+    <a href="/admin/usuarios.php" class="sidebar-link <?= isActive('usuarios', $current) ?>">
+      <i class="bi bi-person-gear"></i> Usuários
+    </a>
+    <a href="/admin/configuracoes.php" class="sidebar-link <?= isActive('configuracoes', $current) ?>">
+      <i class="bi bi-gear-fill"></i> Configurações
+    </a>
+    <?php endif; ?>
+
+    <div class="sidebar-section-label">Acesso Rápido</div>
+    <a href="/index.php" target="_blank" class="sidebar-link">
+      <i class="bi bi-box-arrow-up-right"></i> Ver Site Público
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar"><?= mb_substr($usuario['nome'], 0, 1) ?></div>
+    <div class="user-info">
+      <div class="name"><?= h($usuario['nome']) ?></div>
+      <div class="role"><?= $usuario['tipo'] === 'admin' ? 'Administrador' : 'Usuário' ?></div>
+    </div>
+    <a href="/logout.php" class="logout-btn" title="Sair" data-bs-toggle="tooltip">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+</aside>
+
+<!-- Topbar -->
+<header class="admin-topbar">
+  <button class="topbar-menu-toggle" id="sidebar-toggle">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="topbar-title"><?= h($pageTitle) ?></div>
+  <div class="topbar-actions">
+    <?php if ($pendentes > 0): ?>
+    <a href="/admin/inscricoes.php?status=pendente" class="topbar-btn" style="color:var(--accent);">
+      <i class="bi bi-bell-fill"></i>
+      <span class="d-none d-sm-inline"><?= $pendentes ?> pendente(s)</span>
+    </a>
+    <?php endif; ?>
+    <a href="/index.php" target="_blank" class="topbar-btn">
+      <i class="bi bi-box-arrow-up-right"></i>
+      <span class="d-none d-md-inline">Ver Site</span>
+    </a>
+    <a href="/logout.php" class="topbar-btn" onclick="return confirm('Deseja sair do sistema?')">
+      <i class="bi bi-box-arrow-right"></i>
+      <span class="d-none d-sm-inline">Sair</span>
+    </a>
+  </div>
+</header>
+
+<!-- Flash Messages -->
+<?php $flash = getFlash(); if ($flash): ?>
+<div style="position:fixed;top:74px;right:16px;z-index:9998;min-width:280px;max-width:400px;">
+  <div class="alert alert-<?= h($flash['tipo']) ?> alert-dismissible shadow" role="alert">
+    <i class="bi <?= $flash['tipo'] === 'success' ? 'bi-check-circle' : ($flash['tipo'] === 'danger' ? 'bi-x-circle' : 'bi-info-circle') ?> me-2"></i>
+    <?= h($flash['mensagem']) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Main -->
+<main class="admin-main">
