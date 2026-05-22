@@ -183,7 +183,7 @@ $csrf     = gerarCSRF();
       </form>
     </div>
 
-    <a href="/index.php" class="back-link">
+    <a href="<?= BASE_PATH ?>/index.php" class="back-link">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao site
     </a>
   </div>

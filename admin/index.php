@@ -91,7 +91,7 @@ $grafValues = json_encode(array_column($grafData, 'total'));
     <div class="admin-card">
       <div class="admin-card-header">
         <h5><i class="bi bi-bar-chart-fill"></i> Inscrições - Últimos 14 dias</h5>
-        <a href="/admin/inscricoes.php" class="topbar-btn btn-primary-sm">Ver todas</a>
+        <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="topbar-btn btn-primary-sm">Ver todas</a>
       </div>
       <div class="admin-card-body">
         <canvas id="graficoInscricoes" height="180"></canvas>
@@ -133,17 +133,17 @@ $grafValues = json_encode(array_column($grafData, 'total'));
         <h5><i class="bi bi-lightning-fill"></i> Ações Rápidas</h5>
       </div>
       <div class="admin-card-body d-grid gap-2">
-        <a href="/admin/cursos.php?acao=criar" class="btn btn-sm" style="background:var(--primary);color:#fff;border-radius:8px;font-weight:700;padding:10px;">
+        <a href="<?= BASE_PATH ?>/admin/cursos.php?acao=criar" class="btn btn-sm" style="background:var(--primary);color:#fff;border-radius:8px;font-weight:700;padding:10px;">
           <i class="bi bi-plus-circle me-1"></i>Novo Curso
         </a>
-        <a href="/admin/inscricoes.php?status=pendente" class="btn btn-sm" style="background:#ffc107;color:#000;border-radius:8px;font-weight:700;padding:10px;">
+        <a href="<?= BASE_PATH ?>/admin/inscricoes.php?status=pendente" class="btn btn-sm" style="background:#ffc107;color:#000;border-radius:8px;font-weight:700;padding:10px;">
           <i class="bi bi-clock-history me-1"></i>Ver Pendentes (<?= $pagPendentes ?>)
         </a>
-        <a href="/admin/certificados.php" class="btn btn-sm" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;padding:10px;">
+        <a href="<?= BASE_PATH ?>/admin/certificados.php" class="btn btn-sm" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;padding:10px;">
           <i class="bi bi-patch-check me-1"></i>Emitir Certificados
         </a>
         <?php if (isAdmin()): ?>
-        <a href="/admin/configuracoes.php" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-weight:700;padding:10px;">
+        <a href="<?= BASE_PATH ?>/admin/configuracoes.php" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-weight:700;padding:10px;">
           <i class="bi bi-gear me-1"></i>Configurações
         </a>
         <?php endif; ?>
@@ -158,7 +158,7 @@ $grafValues = json_encode(array_column($grafData, 'total'));
     <div class="admin-card">
       <div class="admin-card-header">
         <h5><i class="bi bi-calendar-event-fill"></i> Próximos Cursos</h5>
-        <a href="/admin/cursos.php" class="topbar-btn btn-primary-sm">Gerenciar</a>
+        <a href="<?= BASE_PATH ?>/admin/cursos.php" class="topbar-btn btn-primary-sm">Gerenciar</a>
       </div>
       <div class="admin-card-body p-0">
         <?php if (empty($proximosCursos)): ?>
@@ -169,7 +169,7 @@ $grafValues = json_encode(array_column($grafData, 'total'));
         <?php else: ?>
         <div class="list-group list-group-flush" style="border-radius:0 0 10px 10px;">
           <?php foreach ($proximosCursos as $c): ?>
-          <a href="/admin/cursos.php?editar=<?= $c['id'] ?>" class="list-group-item list-group-item-action" style="border:none;border-bottom:1px solid var(--gray-mid);">
+          <a href="<?= BASE_PATH ?>/admin/cursos.php?editar=<?= $c['id'] ?>" class="list-group-item list-group-item-action" style="border:none;border-bottom:1px solid var(--gray-mid);">
             <div class="d-flex align-items-start justify-content-between gap-2">
               <div>
                 <div style="font-weight:700;font-size:.9rem;color:var(--primary);"><?= h($c['nome']) ?></div>
@@ -194,7 +194,7 @@ $grafValues = json_encode(array_column($grafData, 'total'));
     <div class="admin-card">
       <div class="admin-card-header">
         <h5><i class="bi bi-person-plus-fill"></i> Últimas Inscrições</h5>
-        <a href="/admin/inscricoes.php" class="topbar-btn btn-primary-sm">Ver todas</a>
+        <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="topbar-btn btn-primary-sm">Ver todas</a>
       </div>
       <div class="admin-card-body p-0">
         <?php if (empty($ultimasInscricoes)): ?>

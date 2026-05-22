@@ -205,6 +205,10 @@ function redirect(string $url, ?string $mensagem = null, string $tipo = 'success
         initSession();
         $_SESSION['flash'] = ['mensagem' => $mensagem, 'tipo' => $tipo];
     }
+    // Prefixa BASE_PATH em URLs relativas (começam com / mas não com //)
+    if (isset($url[0]) && $url[0] === '/' && (!isset($url[1]) || $url[1] !== '/')) {
+        $url = rtrim(BASE_PATH, '/') . $url;
+    }
     header('Location: ' . $url);
     exit;
 }

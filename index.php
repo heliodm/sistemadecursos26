@@ -47,7 +47,7 @@ require_once __DIR__ . '/includes/header.php';
         <p class="lead mb-4 fade-in-up">
           <?= h(getConfig('site_descricao', 'Encontre o curso ideal para você e faça sua inscrição online.')) ?>
         </p>
-        <form class="hero-search-bar d-flex fade-in-up" id="form-busca" action="/index.php" method="GET">
+        <form class="hero-search-bar d-flex fade-in-up" id="form-busca" action="<?= BASE_PATH ?>/index.php" method="GET">
           <input type="text" id="search-cursos" name="q" class="form-control"
             placeholder="Buscar cursos, instrutores..." value="<?= h($busca) ?>" autocomplete="off">
           <button type="submit" class="btn">
@@ -79,22 +79,22 @@ require_once __DIR__ . '/includes/header.php';
 <section class="filter-bar" id="cursos">
   <div class="container d-flex align-items-center flex-wrap gap-2">
     <span class="me-2" style="font-size:.88rem;font-weight:700;color:#666;">Filtrar:</span>
-    <a href="/index.php<?= $busca ? '?q=' . urlencode($busca) : '' ?>"
+    <a href="<?= BASE_PATH ?>/index.php<?= $busca ? '?q=' . urlencode($busca) : '' ?>"
        class="btn-filter <?= !$tipo ? 'active' : '' ?>">
       Todos (<?= $totalCursos ?>)
     </a>
-    <a href="/index.php?tipo=presencial<?= $busca ? '&q=' . urlencode($busca) : '' ?>"
+    <a href="<?= BASE_PATH ?>/index.php?tipo=presencial<?= $busca ? '&q=' . urlencode($busca) : '' ?>"
        class="btn-filter <?= $tipo === 'presencial' ? 'active' : '' ?>">
       <i class="bi bi-geo-alt"></i> Presencial (<?= $nPresencial ?>)
     </a>
-    <a href="/index.php?tipo=online<?= $busca ? '&q=' . urlencode($busca) : '' ?>"
+    <a href="<?= BASE_PATH ?>/index.php?tipo=online<?= $busca ? '&q=' . urlencode($busca) : '' ?>"
        class="btn-filter <?= $tipo === 'online' ? 'active' : '' ?>">
       <i class="bi bi-wifi"></i> Online (<?= $nOnline ?>)
     </a>
     <?php if ($busca): ?>
     <span class="ms-auto" style="font-size:.85rem;color:#888;">
       Resultados para: <strong>"<?= h($busca) ?>"</strong>
-      <a href="/index.php" class="ms-1 text-danger" style="font-size:.8rem;"><i class="bi bi-x-circle"></i> Limpar</a>
+      <a href="<?= BASE_PATH ?>/index.php" class="ms-1 text-danger" style="font-size:.8rem;"><i class="bi bi-x-circle"></i> Limpar</a>
     </span>
     <?php endif; ?>
   </div>
@@ -117,7 +117,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="no-results" id="no-results">
       <i class="bi bi-search d-block"></i>
       <h5>Nenhum curso encontrado</h5>
-      <p>Tente buscar por outro termo ou <a href="/index.php">ver todos os cursos</a>.</p>
+      <p>Tente buscar por outro termo ou <a href="<?= BASE_PATH ?>/index.php">ver todos os cursos</a>.</p>
     </div>
     <?php else: ?>
     <div id="no-results" class="no-results" style="display:none;">
@@ -183,7 +183,7 @@ require_once __DIR__ . '/includes/header.php';
               <?php endif; ?>
             </div>
             <?php if ($curso['inscricoes_abertas']): ?>
-            <a href="/curso.php?slug=<?= h($curso['slug']) ?>" class="btn-inscricao">
+            <a href="<?= BASE_PATH ?>/curso.php?slug=<?= h($curso['slug']) ?>" class="btn-inscricao">
               Inscrever-se <i class="bi bi-arrow-right"></i>
             </a>
             <?php else: ?>

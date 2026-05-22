@@ -159,7 +159,7 @@ $cursos = $stmtList->fetchAll();
 <?php if ($cursoEdit !== null): ?>
 <!-- ===== FORM CRIAR/EDITAR ===== -->
 <div class="d-flex align-items-center gap-2 mb-4">
-  <a href="/admin/cursos.php" class="btn-action view"><i class="bi bi-arrow-left"></i> Voltar</a>
+  <a href="<?= BASE_PATH ?>/admin/cursos.php" class="btn-action view"><i class="bi bi-arrow-left"></i> Voltar</a>
   <h4 class="mb-0" style="color:var(--primary);font-weight:bold;"><?= h($pageTitle) ?></h4>
 </div>
 
@@ -333,11 +333,11 @@ $cursos = $stmtList->fetchAll();
             <i class="bi bi-check2-circle me-1"></i>
             <?= $cursoEdit['id'] ? 'Salvar Alterações' : 'Criar Curso' ?>
           </button>
-          <a href="/admin/cursos.php" class="btn btn-outline-secondary" style="border-radius:8px;font-weight:700;padding:11px;">
+          <a href="<?= BASE_PATH ?>/admin/cursos.php" class="btn btn-outline-secondary" style="border-radius:8px;font-weight:700;padding:11px;">
             Cancelar
           </a>
           <?php if ($cursoEdit['id'] && $cursoEdit['slug']): ?>
-          <a href="/curso.php?slug=<?= h($cursoEdit['slug']) ?>" target="_blank"
+          <a href="<?= BASE_PATH ?>/curso.php?slug=<?= h($cursoEdit['slug']) ?>" target="_blank"
              class="btn btn-outline-secondary" style="border-radius:8px;padding:10px;font-size:.85rem;">
             <i class="bi bi-box-arrow-up-right me-1"></i>Ver Página Pública
           </a>
@@ -352,7 +352,7 @@ $cursos = $stmtList->fetchAll();
 <!-- ===== LISTAGEM ===== -->
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <div></div>
-  <a href="/admin/cursos.php?acao=criar" class="topbar-btn btn-primary-sm">
+  <a href="<?= BASE_PATH ?>/admin/cursos.php?acao=criar" class="topbar-btn btn-primary-sm">
     <i class="bi bi-plus-circle"></i> Novo Curso
   </a>
 </div>
@@ -374,9 +374,9 @@ $cursos = $stmtList->fetchAll();
     <i class="bi bi-search"></i>
   </button>
   <?php if ($searchQ || $filtroTipo || $filtroAtivo !== ''): ?>
-  <a href="/admin/cursos.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
+  <a href="<?= BASE_PATH ?>/admin/cursos.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
   <?php endif; ?>
-  <a href="/api/exportar.php?tipo=cursos<?= $searchQ ? '&q='.urlencode($searchQ) : '' ?>" class="btn ms-auto"
+  <a href="<?= BASE_PATH ?>/api/exportar.php?tipo=cursos<?= $searchQ ? '&q='.urlencode($searchQ) : '' ?>" class="btn ms-auto"
      style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
     <i class="bi bi-file-earmark-excel"></i> Exportar Excel
   </a>
@@ -441,13 +441,13 @@ $cursos = $stmtList->fetchAll();
           </td>
           <td>
             <div class="actions">
-              <a href="/admin/cursos.php?editar=<?= $c['id'] ?>" class="btn-action edit">
+              <a href="<?= BASE_PATH ?>/admin/cursos.php?editar=<?= $c['id'] ?>" class="btn-action edit">
                 <i class="bi bi-pencil"></i>
               </a>
-              <a href="/admin/inscricoes.php?curso_id=<?= $c['id'] ?>" class="btn-action view">
+              <a href="<?= BASE_PATH ?>/admin/inscricoes.php?curso_id=<?= $c['id'] ?>" class="btn-action view">
                 <i class="bi bi-people"></i>
               </a>
-              <a href="/curso.php?slug=<?= h($c['slug']) ?>" target="_blank" class="btn-action success">
+              <a href="<?= BASE_PATH ?>/curso.php?slug=<?= h($c['slug']) ?>" target="_blank" class="btn-action success">
                 <i class="bi bi-box-arrow-up-right"></i>
               </a>
               <?php if (isAdmin()): ?>

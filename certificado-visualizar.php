@@ -181,7 +181,7 @@ $validFinal    = str_replace(array_keys($replacements), array_values($replacemen
 </head>
 <body>
   <div class="cert-toolbar no-print">
-    <a href="/certificados.php"><i>←</i> Voltar</a>
+    <a href="<?= BASE_PATH ?>/certificados.php"><i>←</i> Voltar</a>
     <button onclick="window.print()"><i>⎙</i> Imprimir / Salvar PDF</button>
   </div>
 

@@ -111,7 +111,7 @@ require_once __DIR__ . '/includes/header.php';
   <div class="container">
     <nav aria-label="breadcrumb" class="mb-3">
       <ol class="breadcrumb" style="background:none;padding:0;font-size:.85rem;">
-        <li class="breadcrumb-item"><a href="/index.php" style="color:rgba(255,255,255,.7);">Início</a></li>
+        <li class="breadcrumb-item"><a href="<?= BASE_PATH ?>/index.php" style="color:rgba(255,255,255,.7);">Início</a></li>
         <li class="breadcrumb-item active" style="color:rgba(255,255,255,.5);"><?= h($curso['nome']) ?></li>
       </ol>
     </nav>

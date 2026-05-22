@@ -3,9 +3,10 @@
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 define('BASE_URL', $protocol . '://' . $host);
+define('BASE_PATH', '/apejese/cursos'); // Caminho base da aplicação (sem barra final)
 define('ROOT_PATH', dirname(__DIR__));
 define('UPLOAD_PATH', ROOT_PATH . '/uploads');
-define('UPLOAD_URL', BASE_URL . '/uploads');
+define('UPLOAD_URL', BASE_URL . BASE_PATH . '/uploads');
 
 // Configurações de sessão segura
 define('SESSION_LIFETIME', 7200); // 2 horas

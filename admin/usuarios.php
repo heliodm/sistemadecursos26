@@ -108,7 +108,7 @@ $usuarios = $db->query("SELECT id, nome, email, tipo, ativo, criado_em FROM usua
       <div class="admin-card-header">
         <h5><i class="bi bi-person-plus-fill"></i> <?= $editUser ? 'Editar Usuário' : 'Novo Usuário' ?></h5>
         <?php if ($editUser): ?>
-        <a href="/admin/usuarios.php" class="btn-action view"><i class="bi bi-x"></i> Cancelar</a>
+        <a href="<?= BASE_PATH ?>/admin/usuarios.php" class="btn-action view"><i class="bi bi-x"></i> Cancelar</a>
         <?php endif; ?>
       </div>
       <div class="admin-card-body">
@@ -178,7 +178,7 @@ $usuarios = $db->query("SELECT id, nome, email, tipo, ativo, criado_em FROM usua
     <div class="admin-card">
       <div class="admin-card-header">
         <h5><i class="bi bi-people-fill"></i> Usuários (<?= count($usuarios) ?>)</h5>
-        <a href="/api/exportar.php?tipo=usuarios" class="topbar-btn btn-primary-sm">
+        <a href="<?= BASE_PATH ?>/api/exportar.php?tipo=usuarios" class="topbar-btn btn-primary-sm">
           <i class="bi bi-file-earmark-excel"></i> Exportar
         </a>
       </div>
@@ -216,7 +216,7 @@ $usuarios = $db->query("SELECT id, nome, email, tipo, ativo, criado_em FROM usua
               </td>
               <td>
                 <div class="actions">
-                  <a href="/admin/usuarios.php?editar=<?= $u['id'] ?>" class="btn-action edit">
+                  <a href="<?= BASE_PATH ?>/admin/usuarios.php?editar=<?= $u['id'] ?>" class="btn-action edit">
                     <i class="bi bi-pencil"></i>
                   </a>
                   <?php if ($u['id'] !== (int)$usuario['id']): ?>

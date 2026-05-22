@@ -450,7 +450,7 @@ function cfg(string $key, array $c, string $d = ''): string {
         $primeiroCert = $db->query("SELECT codigo_unico FROM certificados WHERE valido=1 LIMIT 1")->fetchColumn();
         if ($primeiroCert):
         ?>
-        <a href="/certificado-visualizar.php?codigo=<?= h($primeiroCert) ?>" target="_blank"
+        <a href="<?= BASE_PATH ?>/certificado-visualizar.php?codigo=<?= h($primeiroCert) ?>" target="_blank"
            class="btn btn-outline-secondary" style="border-radius:8px;font-weight:700;">
           <i class="bi bi-eye me-1"></i>Pré-visualizar Certificado
         </a>

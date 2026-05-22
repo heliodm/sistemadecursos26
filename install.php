@@ -12,6 +12,7 @@ if (file_exists(__DIR__ . '/config/.installed')) {
 }
 
 define('ROOT_PATH', __DIR__);
+define('BASE_PATH', '/apejese/cursos');
 
 // ──────────────── Helpers ────────────────
 function checkReq(string $ext): bool {
@@ -566,7 +567,7 @@ $postValues = $_POST ?: [];
         </div>
         <div class="mb-1">
           <span style="opacity:.6;">URL do Painel:</span>
-          <code><?= escHtml((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'seudominio.com') . '/admin/index.php') ?></code>
+          <code><?= escHtml((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'seudominio.com') . BASE_PATH . '/admin/index.php') ?></code>
         </div>
         <div class="mb-1">
           <span style="opacity:.6;">E-mail:</span>
@@ -595,10 +596,10 @@ $postValues = $_POST ?: [];
       </div>
 
       <div class="d-flex gap-3 justify-content-center flex-wrap">
-        <a href="/admin/index.php" class="btn-install">
+        <a href="<?= BASE_PATH ?>/admin/index.php" class="btn-install">
           <i class="bi bi-speedometer2 me-1"></i>Acessar o Painel
         </a>
-        <a href="/index.php" class="btn-install secondary">
+        <a href="<?= BASE_PATH ?>/index.php" class="btn-install secondary">
           <i class="bi bi-globe me-1"></i>Ver Site Público
         </a>
       </div>

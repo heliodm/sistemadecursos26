@@ -34,7 +34,7 @@ $csrf         = gerarCSRF();
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <!-- Google Fonts - Tahoma não está no Google, mas carregamos como fallback -->
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="<?= BASE_PATH ?>/assets/css/style.css">
 </head>
 <body>
 
@@ -58,7 +58,7 @@ $csrf         = gerarCSRF();
 <header class="site-header">
   <nav class="navbar navbar-expand-lg" style="padding:0 0;">
     <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="/index.php">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="<?= BASE_PATH ?>/index.php">
         <?php if ($siteLogo): ?>
           <img src="<?= h($siteLogo) ?>" alt="<?= h($siteName) ?>">
         <?php else: ?>
@@ -73,25 +73,29 @@ $csrf         = gerarCSRF();
 
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav ms-auto">
+          <?php
+          // Prefixa BASE_PATH em URLs relativas do menu (não afeta URLs externas http/https)
+          $mu = function(string $u): string { return preg_match('#^https?://#', $u) ? $u : BASE_PATH . $u; };
+          ?>
           <?php if ($menu1Ativo == '1'): ?>
           <li class="nav-item">
             <a class="nav-link <?= ($currentPath === parse_url($menu1Url, PHP_URL_PATH)) ? 'active' : '' ?>"
-               href="<?= h($menu1Url) ?>"><?= h($menu1Label) ?></a>
+               href="<?= h($mu($menu1Url)) ?>"><?= h($menu1Label) ?></a>
           </li>
           <?php endif; ?>
           <?php if ($menu2Ativo == '1'): ?>
           <li class="nav-item">
-            <a class="nav-link" href="<?= h($menu2Url) ?>"><?= h($menu2Label) ?></a>
+            <a class="nav-link" href="<?= h($mu($menu2Url)) ?>"><?= h($menu2Label) ?></a>
           </li>
           <?php endif; ?>
           <?php if ($menu3Ativo == '1'): ?>
           <li class="nav-item">
             <a class="nav-link <?= (strpos($currentPath, 'certificado') !== false) ? 'active' : '' ?>"
-               href="<?= h($menu3Url) ?>"><?= h($menu3Label) ?></a>
+               href="<?= h($mu($menu3Url)) ?>"><?= h($menu3Label) ?></a>
           </li>
           <?php endif; ?>
           <li class="nav-item ms-2">
-            <a class="nav-link" href="/login.php" style="border:1px solid rgba(255,255,255,.3);border-radius:6px;">
+            <a class="nav-link" href="<?= BASE_PATH ?>/login.php" style="border:1px solid rgba(255,255,255,.3);border-radius:6px;">
               <i class="bi bi-lock-fill"></i> Admin
             </a>
           </li>

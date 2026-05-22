@@ -19,9 +19,9 @@ $emailContato = getConfig('email_contato', '');
       <div class="col-md-3">
         <h6>Navegação</h6>
         <ul class="list-unstyled" style="font-size:.88rem;">
-          <li class="mb-1"><a href="/index.php"><i class="bi bi-chevron-right"></i> Início</a></li>
-          <li class="mb-1"><a href="/index.php#cursos"><i class="bi bi-chevron-right"></i> Cursos</a></li>
-          <li class="mb-1"><a href="/certificados.php"><i class="bi bi-chevron-right"></i> Certificados</a></li>
+          <li class="mb-1"><a href="<?= BASE_PATH ?>/index.php"><i class="bi bi-chevron-right"></i> Início</a></li>
+          <li class="mb-1"><a href="<?= BASE_PATH ?>/index.php#cursos"><i class="bi bi-chevron-right"></i> Cursos</a></li>
+          <li class="mb-1"><a href="<?= BASE_PATH ?>/certificados.php"><i class="bi bi-chevron-right"></i> Certificados</a></li>
         </ul>
       </div>
       <div class="col-md-5">
@@ -58,6 +58,6 @@ $emailContato = getConfig('email_contato', '');
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/assets/js/main.js"></script>
+<script src="<?= BASE_PATH ?>/assets/js/main.js"></script>
 </body>
 </html>

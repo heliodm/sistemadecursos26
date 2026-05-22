@@ -105,9 +105,9 @@ $cursosList = $db->query("SELECT id, nome FROM cursos ORDER BY nome ASC")->fetch
   </select>
   <button type="submit" class="btn" style="background:var(--primary);color:#fff;border-radius:8px;font-weight:700;"><i class="bi bi-search"></i></button>
   <?php if ($searchQ || $status || $forma || $cursoId): ?>
-  <a href="/admin/pagamentos.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
+  <a href="<?= BASE_PATH ?>/admin/pagamentos.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
   <?php endif; ?>
-  <a href="/api/exportar.php?tipo=pagamentos<?= $status ? '&status='.$status : '' ?><?= $cursoId ? '&curso_id='.$cursoId : '' ?>"
+  <a href="<?= BASE_PATH ?>/api/exportar.php?tipo=pagamentos<?= $status ? '&status='.$status : '' ?><?= $cursoId ? '&curso_id='.$cursoId : '' ?>"
      class="btn ms-auto" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
     <i class="bi bi-file-earmark-excel"></i> Exportar Excel
   </a>

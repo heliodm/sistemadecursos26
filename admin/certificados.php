@@ -150,10 +150,10 @@ $emitidos = $stmtEmit->fetchAll();
   <?php endif; ?>
   <button type="submit" class="btn" style="background:var(--primary);color:#fff;border-radius:8px;font-weight:700;"><i class="bi bi-search"></i></button>
   <?php if ($searchQ || $cursoId): ?>
-  <a href="/admin/certificados.php?aba=<?= h($aba) ?>" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
+  <a href="<?= BASE_PATH ?>/admin/certificados.php?aba=<?= h($aba) ?>" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
   <?php endif; ?>
   <?php if ($aba === 'emitidos'): ?>
-  <a href="/api/exportar.php?tipo=certificados<?= $cursoId ? '&curso_id='.$cursoId : '' ?>" class="btn ms-auto"
+  <a href="<?= BASE_PATH ?>/api/exportar.php?tipo=certificados<?= $cursoId ? '&curso_id='.$cursoId : '' ?>" class="btn ms-auto"
      style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
     <i class="bi bi-file-earmark-excel"></i> Exportar Excel
   </a>
@@ -242,7 +242,7 @@ $emitidos = $stmtEmit->fetchAll();
           </td>
           <td>
             <div class="actions">
-              <a href="/certificado-visualizar.php?codigo=<?= h($cert['codigo_unico']) ?>" target="_blank" class="btn-action view">
+              <a href="<?= BASE_PATH ?>/certificado-visualizar.php?codigo=<?= h($cert['codigo_unico']) ?>" target="_blank" class="btn-action view">
                 <i class="bi bi-eye"></i>
               </a>
               <?php if (isAdmin()): ?>

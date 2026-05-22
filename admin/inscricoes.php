@@ -69,7 +69,7 @@ if ($detalhesId > 0) {
 
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <div></div>
-  <a href="/api/exportar.php?tipo=inscricoes<?= $cursoId ? '&curso_id='.$cursoId : '' ?><?= $status ? '&status='.$status : '' ?>"
+  <a href="<?= BASE_PATH ?>/api/exportar.php?tipo=inscricoes<?= $cursoId ? '&curso_id='.$cursoId : '' ?><?= $status ? '&status='.$status : '' ?>"
      class="topbar-btn" style="background:var(--secondary);color:#fff;font-weight:700;">
     <i class="bi bi-file-earmark-excel"></i> Exportar Excel
   </a>
@@ -101,7 +101,7 @@ if ($detalhesId > 0) {
     <i class="bi bi-search"></i>
   </button>
   <?php if ($searchQ || $cursoId || $status || $formaPag): ?>
-  <a href="/admin/inscricoes.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
+  <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="btn btn-outline-secondary" style="border-radius:8px;">Limpar</a>
   <?php endif; ?>
 </form>
 
@@ -177,7 +177,7 @@ $nCanc = count(array_filter($inscricoes, fn($i) => $i['status_pagamento'] === 'c
           <td style="font-size:.8rem;color:#888;"><?= formatarData($ins['criado_em'], 'd/m/Y H:i') ?></td>
           <td>
             <div class="actions">
-              <a href="/admin/inscricoes.php?ver=<?= $ins['id'] ?>" class="btn-action view"
+              <a href="<?= BASE_PATH ?>/admin/inscricoes.php?ver=<?= $ins['id'] ?>" class="btn-action view"
                  title="Ver detalhes"><i class="bi bi-eye"></i></a>
               <?php if (isAdmin()): ?>
               <form method="POST" style="display:inline;" onsubmit="return confirm('Remover esta inscrição?')">
@@ -203,7 +203,7 @@ $nCanc = count(array_filter($inscricoes, fn($i) => $i['status_pagamento'] === 'c
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i>Detalhes da Inscrição</h5>
-        <a href="/admin/inscricoes.php" class="btn-close"></a>
+        <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="btn-close"></a>
       </div>
       <div class="modal-body">
         <div class="row g-3">
@@ -285,8 +285,8 @@ $nCanc = count(array_filter($inscricoes, fn($i) => $i['status_pagamento'] === 'c
         </form>
       </div>
       <div class="modal-footer">
-        <a href="/admin/inscricoes.php" class="btn btn-secondary" style="border-radius:8px;">Fechar</a>
-        <a href="/admin/certificados.php?inscricao_id=<?= $detalhe['id'] ?>"
+        <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="btn btn-secondary" style="border-radius:8px;">Fechar</a>
+        <a href="<?= BASE_PATH ?>/admin/certificados.php?inscricao_id=<?= $detalhe['id'] ?>"
            class="btn" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
           <i class="bi bi-patch-check me-1"></i>Emitir Certificado
         </a>

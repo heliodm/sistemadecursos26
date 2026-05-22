@@ -49,7 +49,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="cert-search-card shadow-lg">
         <h4><i class="bi bi-search me-2" style="color:var(--secondary);"></i>Validar Certificado</h4>
         <p style="font-size:.9rem;color:#666;margin-bottom:16px;">Digite o código único do certificado para acessar e verificar sua autenticidade.</p>
-        <form method="GET" action="/certificados.php" novalidate>
+        <form method="GET" action="<?= BASE_PATH ?>/certificados.php" novalidate>
           <div class="input-group mb-3">
             <input type="text" class="form-control" name="codigo"
                    value="<?= h($codigo) ?>"
@@ -99,11 +99,11 @@ require_once __DIR__ . '/includes/header.php';
             </div>
           </div>
           <div class="mt-3 d-flex gap-2 justify-content-center flex-wrap">
-            <a href="/certificado-visualizar.php?codigo=<?= h($codigo) ?>" target="_blank"
+            <a href="<?= BASE_PATH ?>/certificado-visualizar.php?codigo=<?= h($codigo) ?>" target="_blank"
                class="btn btn-sm" style="background:var(--primary);color:#fff;border-radius:8px;font-weight:700;">
               <i class="bi bi-eye me-1"></i>Visualizar Certificado
             </a>
-            <a href="/certificado-visualizar.php?codigo=<?= h($codigo) ?>&download=1" target="_blank"
+            <a href="<?= BASE_PATH ?>/certificado-visualizar.php?codigo=<?= h($codigo) ?>&download=1" target="_blank"
                class="btn btn-sm" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
               <i class="bi bi-download me-1"></i>Baixar PDF
             </a>
