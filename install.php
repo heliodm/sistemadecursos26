@@ -97,9 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 3) {
                 }
             }
 
-            // Criar usuário admin com credenciais fornecidas
+            // Criar ou atualizar usuário admin com credenciais fornecidas
             $senhaHash = password_hash($adminSenha, PASSWORD_BCRYPT, ['cost' => 12]);
-            $stmtAdmin = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, 'admin')");
+            $stmtAdmin = $pdo->prepare("
+                INSERT INTO usuarios (nome, email, senha, tipo, ativo) VALUES (?, ?, ?, 'admin', 1)
+                ON DUPLICATE KEY UPDATE nome = VALUES(nome), senha = VALUES(senha), tipo = 'admin', ativo = 1
+            ");
             $stmtAdmin->execute([$adminNome, $adminEmail, $senhaHash]);
 
             // Atualizar config/database.php
@@ -139,7 +142,7 @@ function getDB(): PDO {
 PHP;
             file_put_contents(ROOT_PATH . '/config/database.php', $configContent);
 
-            // Marcar como instalado
+            // Marcar como instalado (remove marker antigo se existir)
             file_put_contents(ROOT_PATH . '/config/.installed', date('Y-m-d H:i:s'));
 
             // Salvar dados para exibir na tela final

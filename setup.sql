@@ -10,7 +10,7 @@ CREATE DATABASE IF NOT EXISTS `sistemadecursos` DEFAULT CHARACTER SET utf8mb4 CO
 USE `sistemadecursos`;
 
 -- Tabela de configurações do sistema
-CREATE TABLE `configuracoes` (
+CREATE TABLE IF NOT EXISTS `configuracoes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `chave` varchar(100) NOT NULL,
   `valor` text DEFAULT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE `configuracoes` (
   UNIQUE KEY `chave` (`chave`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `configuracoes` (`chave`, `valor`) VALUES
+INSERT IGNORE INTO `configuracoes` (`chave`, `valor`) VALUES
 ('site_nome', 'Sistema de Cursos'),
 ('site_logo', ''),
 ('site_descricao', 'Plataforma de Gestão de Cursos'),
@@ -62,7 +62,7 @@ INSERT INTO `configuracoes` (`chave`, `valor`) VALUES
 ('rodape_texto', 'Todos os direitos reservados.');
 
 -- Tabela de usuários do sistema
-CREATE TABLE `usuarios` (
+CREATE TABLE IF NOT EXISTS `usuarios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(150) NOT NULL,
   `email` varchar(150) NOT NULL,
@@ -76,11 +76,11 @@ CREATE TABLE `usuarios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Usuário administrador padrão (heliodm@outlook.com / Helio74*)
-INSERT INTO `usuarios` (`nome`, `email`, `senha`, `tipo`, `ativo`) VALUES
+INSERT IGNORE INTO `usuarios` (`nome`, `email`, `senha`, `tipo`, `ativo`) VALUES
 ('heliodm', 'heliodm@outlook.com', '$2y$12$XEcBYASjzkxmB3CkpS0FzO2ERkbOSqcdvdRTHRJX0PRMfh3//do1i', 'admin', 1);
 
 -- Tabela de cursos
-CREATE TABLE `cursos` (
+CREATE TABLE IF NOT EXISTS `cursos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(255) NOT NULL,
   `slug` varchar(300) NOT NULL,
@@ -109,7 +109,7 @@ CREATE TABLE `cursos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de inscrições
-CREATE TABLE `inscricoes` (
+CREATE TABLE IF NOT EXISTS `inscricoes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `curso_id` int(11) NOT NULL,
   `nome_completo` varchar(200) NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE `inscricoes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de certificados
-CREATE TABLE `certificados` (
+CREATE TABLE IF NOT EXISTS `certificados` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `inscricao_id` int(11) NOT NULL,
   `curso_id` int(11) NOT NULL,
@@ -152,7 +152,7 @@ CREATE TABLE `certificados` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de tokens CSRF
-CREATE TABLE `csrf_tokens` (
+CREATE TABLE IF NOT EXISTS `csrf_tokens` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `token` varchar(64) NOT NULL,
   `sessao_id` varchar(100) NOT NULL,
