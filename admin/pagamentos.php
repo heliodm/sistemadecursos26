@@ -152,7 +152,7 @@ $cursosList = $db->query("SELECT id, nome FROM cursos ORDER BY nome ASC")->fetch
           <td style="font-size:.8rem;color:#888;"><?= formatarData($p['criado_em'], 'd/m/Y H:i') ?></td>
           <td>
             <button type="button" class="btn-action view"
-                    onclick="abrirModalPag(<?= $p['id'] ?>, '<?= h($p['nome_completo']) ?>', '<?= h($p['status_pagamento']) ?>', '<?= h($p['observacoes'] ?? '') ?>')">
+                    onclick="abrirModalPag(<?= $p['id'] ?>, <?= h(json_encode($p['nome_completo'])) ?>, <?= h(json_encode($p['status_pagamento'])) ?>, <?= h(json_encode($p['observacoes'] ?? '')) ?>)">
               <i class="bi bi-pencil-square"></i> Status
             </button>
           </td>

@@ -220,7 +220,7 @@ $usuarios = $db->query("SELECT id, nome, email, tipo, ativo, criado_em FROM usua
                     <i class="bi bi-pencil"></i>
                   </a>
                   <?php if ($u['id'] !== (int)$usuario['id']): ?>
-                  <form method="POST" style="display:inline;" onsubmit="return confirm('Remover usuário <?= h($u['nome']) ?>?')">
+                  <form method="POST" style="display:inline;" onsubmit="return confirm(<?= h(json_encode('Remover usuário ' . $u['nome'] . '?')) ?>)">
                     <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
                     <input type="hidden" name="acao" value="deletar">
                     <input type="hidden" name="id" value="<?= $u['id'] ?>">

@@ -75,7 +75,9 @@ CREATE TABLE `usuarios` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Usuário administrador criado pelo instalador (install.php)
+-- Usuário administrador padrão (heliodm@outlook.com / Helio74*)
+INSERT INTO `usuarios` (`nome`, `email`, `senha`, `tipo`, `ativo`) VALUES
+('heliodm', 'heliodm@outlook.com', '$2y$12$XEcBYASjzkxmB3CkpS0FzO2ERkbOSqcdvdRTHRJX0PRMfh3//do1i', 'admin', 1);
 
 -- Tabela de cursos
 CREATE TABLE `cursos` (

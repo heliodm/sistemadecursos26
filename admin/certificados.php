@@ -202,7 +202,7 @@ $emitidos = $stmtEmit->fetchAll();
           <td style="font-size:.8rem;"><?= h($p['email']) ?></td>
           <td style="font-size:.8rem;color:#888;"><?= formatarData($p['criado_em'], 'd/m/Y') ?></td>
           <td>
-            <form method="POST" style="display:inline;" onsubmit="return confirm('Emitir certificado para <?= h($p['nome_completo']) ?>?')">
+            <form method="POST" style="display:inline;" onsubmit="return confirm(<?= h(json_encode('Emitir certificado para ' . $p['nome_completo'] . '?')) ?>)">
               <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
               <input type="hidden" name="acao" value="emitir">
               <input type="hidden" name="inscricao_id" value="<?= $p['id'] ?>">

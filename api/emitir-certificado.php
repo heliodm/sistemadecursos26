@@ -47,9 +47,12 @@ if (!$ins) {
     exit;
 }
 
-$codigo = gerarCodigoCertificado();
-$db->prepare("INSERT INTO certificados (inscricao_id, curso_id, codigo_unico, nome_completo) VALUES (?,?,?,?)")
-    ->execute([$inscricaoId, $ins['curso_id'], $codigo, $ins['nome_completo']]);
-$db->prepare("UPDATE inscricoes SET certificado_emitido = 1 WHERE id = ?")->execute([$inscricaoId]);
-
-echo json_encode(['sucesso' => true, 'codigo' => $codigo]);
+try {
+    $codigo = gerarCodigoCertificado();
+    $db->prepare("INSERT INTO certificados (inscricao_id, curso_id, codigo_unico, nome_completo) VALUES (?,?,?,?)")
+        ->execute([$inscricaoId, $ins['curso_id'], $codigo, $ins['nome_completo']]);
+    $db->prepare("UPDATE inscricoes SET certificado_emitido = 1 WHERE id = ?")->execute([$inscricaoId]);
+    echo json_encode(['sucesso' => true, 'codigo' => $codigo]);
+} catch (PDOException $e) {
+    echo json_encode(['sucesso' => false, 'erro' => 'Certificado já emitido para esta inscrição.']);
+}
