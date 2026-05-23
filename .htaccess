@@ -15,7 +15,7 @@ php_value date.timezone "America/Sao_Paulo"
 </IfModule>
 
 # Proteger arquivos sensíveis
-<FilesMatch "^(setup\.sql|composer\.json|composer\.lock|\.env)$">
+<FilesMatch "^(setup\.sql|composer\.json|composer\.lock|\.env|\.version)$">
   Order Allow,Deny
   Deny from all
 </FilesMatch>

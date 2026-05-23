@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/updater.php';
 
 requireLogin('/login.php');
 
@@ -15,6 +16,12 @@ $csrf      = gerarCSRF();
 $db = getDB();
 $stmtPend = $db->query("SELECT COUNT(*) FROM inscricoes WHERE status_pagamento = 'pendente'");
 $pendentes = (int)$stmtPend->fetchColumn();
+
+// Verificação de atualização (somente admin, lê cache — sem chamada de rede)
+$temAtualizacao = false;
+if (isAdmin()) {
+    $temAtualizacao = upd_hasUpdate();
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -92,6 +99,12 @@ $pendentes = (int)$stmtPend->fetchColumn();
     <a href="<?= BASE_PATH ?>/admin/configuracoes.php" class="sidebar-link <?= isActive('configuracoes', $current) ?>">
       <i class="bi bi-gear-fill"></i> Configurações
     </a>
+    <a href="<?= BASE_PATH ?>/admin/atualizacoes.php" class="sidebar-link <?= isActive('atualizacoes', $current) ?>" style="position:relative;">
+      <i class="bi bi-cloud-arrow-up-fill"></i> Atualizações
+      <?php if ($temAtualizacao): ?>
+      <span class="badge bg-danger ms-auto" style="animation:pulse-badge 1.5s infinite;">!</span>
+      <?php endif; ?>
+    </a>
     <?php endif; ?>
 
     <div class="sidebar-section-label">Acesso Rápido</div>
@@ -119,6 +132,12 @@ $pendentes = (int)$stmtPend->fetchColumn();
   </button>
   <div class="topbar-title"><?= h($pageTitle) ?></div>
   <div class="topbar-actions">
+    <?php if ($temAtualizacao): ?>
+    <a href="<?= BASE_PATH ?>/admin/atualizacoes.php" class="topbar-btn" style="color:var(--secondary);font-weight:700;">
+      <i class="bi bi-cloud-arrow-up-fill"></i>
+      <span class="d-none d-sm-inline">Atualização disponível</span>
+    </a>
+    <?php endif; ?>
     <?php if ($pendentes > 0): ?>
     <a href="<?= BASE_PATH ?>/admin/inscricoes.php?status=pendente" class="topbar-btn" style="color:var(--accent);">
       <i class="bi bi-bell-fill"></i>

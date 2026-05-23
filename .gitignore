@@ -1,2 +1,5 @@
 logs/*.log
 .env
+config/.version
+config/database.php
+config/.installed
