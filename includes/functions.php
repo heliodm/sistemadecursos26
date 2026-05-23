@@ -209,6 +209,11 @@ function redirect(string $url, ?string $mensagem = null, string $tipo = 'success
     if (isset($url[0]) && $url[0] === '/' && (!isset($url[1]) || $url[1] !== '/')) {
         $url = rtrim(BASE_PATH, '/') . $url;
     }
+    // Descarta qualquer saída em buffer (HTML do header já renderizado)
+    // para garantir que o Location: chegue limpo ao cliente
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     header('Location: ' . $url);
     exit;
 }
