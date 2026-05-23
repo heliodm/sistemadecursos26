@@ -58,6 +58,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setConfig('deposito_agencia', sanitize($_POST['deposito_agencia'] ?? ''));
         setConfig('deposito_conta', sanitize($_POST['deposito_conta'] ?? ''));
         setConfig('deposito_titular', sanitize($_POST['deposito_titular'] ?? ''));
+        // InfinitePay
+        setConfig('infinitepay_client_id', sanitize($_POST['infinitepay_client_id'] ?? ''));
+        if (!empty($_POST['infinitepay_client_secret'])) {
+            setConfig('infinitepay_client_secret', sanitize($_POST['infinitepay_client_secret'] ?? ''));
+        }
+        if (!empty($_POST['infinitepay_webhook_secret'])) {
+            setConfig('infinitepay_webhook_secret', sanitize($_POST['infinitepay_webhook_secret'] ?? ''));
+        }
+        $ambiente = in_array($_POST['infinitepay_ambiente'] ?? '', ['producao', 'sandbox']) ? $_POST['infinitepay_ambiente'] : 'producao';
+        setConfig('infinitepay_ambiente', $ambiente);
+        $maxParc = max(1, min(12, (int)($_POST['infinitepay_max_parcelas'] ?? 12)));
+        setConfig('infinitepay_max_parcelas', (string)$maxParc);
         redirect('/admin/configuracoes.php?aba=pagamentos', 'Opções de pagamento atualizadas.', 'success');
     }
 
@@ -309,24 +321,74 @@ function cfg(string $key, array $c, string $d = ''): string {
       </div>
     </div>
 
-    <!-- Cartão -->
-    <div class="col-lg-6">
+    <!-- Cartão / InfinitePay -->
+    <div class="col-12">
       <div class="admin-card">
         <div class="admin-card-header">
-          <h5><i class="bi bi-credit-card"></i> Cartão de Crédito</h5>
+          <h5><i class="bi bi-credit-card"></i> Cartão de Crédito — InfinitePay</h5>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" name="cartao_ativo" id="cartao_ativo" style="width:40px;height:20px;" <?= ($configs['cartao_ativo'] ?? '0') === '1' ? 'checked' : '' ?>>
             <label class="form-check-label fw-bold" for="cartao_ativo" style="font-size:.82rem;">Habilitado</label>
           </div>
         </div>
         <div class="admin-card-body">
-          <div class="alert alert-info" style="border-radius:8px;font-size:.85rem;">
-            <i class="bi bi-info-circle me-1"></i>
-            Integração com gateway de pagamento. Exibe mensagem personalizada ao selecionar.
+          <?php
+          $ipOk = !empty($configs['infinitepay_client_id'] ?? '') && !empty($configs['infinitepay_client_secret'] ?? '');
+          if ($ipOk): ?>
+          <div class="alert alert-success mb-3" style="border-radius:8px;font-size:.85rem;">
+            <i class="bi bi-check-circle-fill me-1"></i>
+            Credenciais configuradas. A opção de cartão está integrada com a InfinitePay.
           </div>
-          <div class="admin-form-group mb-0">
-            <label>Mensagem ao Inscrito</label>
-            <textarea class="form-control" name="cartao_instrucoes" rows="3"><?= cfg('cartao_instrucoes', $configs) ?></textarea>
+          <?php else: ?>
+          <div class="alert alert-warning mb-3" style="border-radius:8px;font-size:.85rem;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Preencha o <strong>Client ID</strong> e <strong>Client Secret</strong> da InfinitePay para ativar o pagamento por cartão.
+            Obtenha suas credenciais em <a href="https://money.infinitepay.io/settings/credentials" target="_blank">money.infinitepay.io/settings/credentials</a>.
+          </div>
+          <?php endif; ?>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="admin-form-group mb-0">
+                <label>Ambiente</label>
+                <select class="form-select" name="infinitepay_ambiente">
+                  <option value="producao" <?= ($configs['infinitepay_ambiente'] ?? 'producao') === 'producao' ? 'selected' : '' ?>>Produção</option>
+                  <option value="sandbox" <?= ($configs['infinitepay_ambiente'] ?? 'producao') === 'sandbox' ? 'selected' : '' ?>>Sandbox (Testes)</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="admin-form-group mb-0">
+                <label>Máximo de Parcelas</label>
+                <select class="form-select" name="infinitepay_max_parcelas">
+                  <?php for ($p = 1; $p <= 12; $p++): ?>
+                  <option value="<?= $p ?>" <?= (int)($configs['infinitepay_max_parcelas'] ?? 12) === $p ? 'selected' : '' ?>><?= $p ?>x</option>
+                  <?php endfor; ?>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="admin-form-group mb-0">
+                <label>Client ID</label>
+                <input type="text" class="form-control" name="infinitepay_client_id"
+                       value="<?= cfg('infinitepay_client_id', $configs) ?>" maxlength="200"
+                       placeholder="Ex: abc123">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="admin-form-group mb-0">
+                <label>Client Secret <small class="text-muted">(deixe em branco para manter)</small></label>
+                <input type="password" class="form-control" name="infinitepay_client_secret"
+                       placeholder="<?= !empty($configs['infinitepay_client_secret'] ?? '') ? '••••••••••••' : 'Sua chave secreta' ?>">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="admin-form-group mb-0">
+                <label>Webhook Secret <small class="text-muted">(opcional — deixe em branco para manter)</small></label>
+                <input type="password" class="form-control" name="infinitepay_webhook_secret"
+                       placeholder="<?= !empty($configs['infinitepay_webhook_secret'] ?? '') ? '••••••••••••' : 'Chave de validação do webhook' ?>">
+                <div class="form-text">URL do webhook: <code><?= h(BASE_PATH) ?>/api/infinitepay-webhook.php</code></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
