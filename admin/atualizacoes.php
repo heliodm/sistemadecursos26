@@ -1,13 +1,19 @@
 <?php
-$pageTitle = 'Atualizações do Sistema';
-require_once __DIR__ . '/includes/header.php';
+// Processa POST antes de qualquer saída HTML (evita headers-already-sent)
+require_once dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/config/database.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/updater.php';
+
+requireLogin('/login.php');
 requireAdmin();
 
 $resultado = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verificarCSRF($_POST['csrf_token'] ?? '')) {
-        redirect('/admin/atualizacoes.php', 'Token inválido.', 'danger');
+        redirect('/admin/atualizacoes.php', 'Token de segurança inválido. Tente novamente.', 'danger');
     }
 
     $acao = sanitize($_POST['acao'] ?? '');
@@ -20,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $msg = 'Verificação concluída.';
         if (($prev['commit'] ?? '') === 'desconhecido' && !empty($info['latest_commit'])) {
-            $msg = 'Versão atual inicializada como ' . h($info['commit']) . '. Futuras atualizações serão detectadas automaticamente.';
+            $msg = 'Versão atual inicializada como ' . $info['commit'] . '. Futuras atualizações serão detectadas automaticamente.';
         }
         redirect('/admin/atualizacoes.php', $msg, 'success');
     }
@@ -28,9 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'atualizar') {
         $resultado = upd_executeUpdate();
         if ($resultado['sucesso']) {
-            redirect('/admin/atualizacoes.php', 'Sistema atualizado! Versão: ' . h($resultado['commit']), 'success');
+            redirect('/admin/atualizacoes.php', 'Sistema atualizado! Versão: ' . $resultado['commit'], 'success');
         }
-        // mantém $resultado para exibir erro na página
+        // mantém $resultado para exibir o erro inline
     }
 
     if ($acao === 'salvar_config') {
@@ -50,6 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// ── HTML output começa aqui ──────────────────────────────────────────────────
+$pageTitle = 'Atualizações do Sistema';
+require_once __DIR__ . '/includes/header.php';
+
 $info  = upd_readVersion();
 $token = getConfig('github_token', '');
 
@@ -57,9 +67,6 @@ $canDownload = upd_canDownload();
 $canExtract  = upd_canExtract();
 $canWrite    = upd_canWrite();
 $canUpdate   = $canDownload && $canExtract && $canWrite;
-
-// Método de download preferido
-$dlMethod = function_exists('curl_init') ? 'cURL (preferido)' : (ini_get('allow_url_fopen') ? 'allow_url_fopen' : '');
 ?>
 
 <div class="row g-4">
