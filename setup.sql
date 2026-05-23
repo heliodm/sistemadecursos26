@@ -151,15 +151,4 @@ CREATE TABLE IF NOT EXISTS `certificados` (
   CONSTRAINT `fk_cert_curso` FOREIGN KEY (`curso_id`) REFERENCES `cursos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela de tokens CSRF
-CREATE TABLE IF NOT EXISTS `csrf_tokens` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `token` varchar(64) NOT NULL,
-  `sessao_id` varchar(100) NOT NULL,
-  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `token` (`token`),
-  KEY `sessao_id` (`sessao_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 COMMIT;

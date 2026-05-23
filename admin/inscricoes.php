@@ -286,7 +286,7 @@ $nCanc = count(array_filter($inscricoes, fn($i) => $i['status_pagamento'] === 'c
       </div>
       <div class="modal-footer">
         <a href="<?= BASE_PATH ?>/admin/inscricoes.php" class="btn btn-secondary" style="border-radius:8px;">Fechar</a>
-        <a href="<?= BASE_PATH ?>/admin/certificados.php?inscricao_id=<?= $detalhe['id'] ?>"
+        <a href="<?= BASE_PATH ?>/admin/certificados.php?aba=pendentes&curso_id=<?= (int)$detalhe['curso_id'] ?>"
            class="btn" style="background:var(--secondary);color:#fff;border-radius:8px;font-weight:700;">
           <i class="bi bi-patch-check me-1"></i>Emitir Certificado
         </a>

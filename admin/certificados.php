@@ -168,7 +168,11 @@ $emitidos = $stmtEmit->fetchAll();
   <div class="admin-card-body d-flex align-items-center gap-3 flex-wrap">
     <div>
       <strong style="color:var(--primary);"><?= count($pendentes) ?> inscrito(s) com pagamento confirmado aguardando certificado</strong>
-      <div style="font-size:.82rem;color:#888;">Curso selecionado: <?= h($cursosList[array_search($cursoId, array_column($cursosList, 'id'))]['nome'] ?? '') ?></div>
+      <div style="font-size:.82rem;color:#888;">Curso selecionado: <?php
+        $cursoNomeExib = '';
+        foreach ($cursosList as $cl) { if ((int)$cl['id'] === $cursoId) { $cursoNomeExib = $cl['nome']; break; } }
+        echo h($cursoNomeExib);
+      ?></div>
     </div>
     <form method="POST" class="ms-auto" onsubmit="return confirm('Emitir certificados para todos os <?= count($pendentes) ?> inscrito(s)?')">
       <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">

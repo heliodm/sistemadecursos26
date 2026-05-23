@@ -10,7 +10,7 @@ $erros  = [];
 // ---- PROCESSAR FORMULÁRIO ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verificarCSRF($_POST['csrf_token'] ?? '')) {
-        $erros[] = 'Token de segurança inválido.';
+        redirect('/admin/cursos.php', 'Token de segurança inválido. Tente novamente.', 'danger');
     } else {
         $postAcao = sanitize($_POST['acao'] ?? '');
 

@@ -165,10 +165,6 @@ function upd_checkGithub(bool $force = false): array {
 function upd_hasUpdate(): bool {
     try {
         $info = upd_readVersion();
-        if (empty($info['checked_at']) || (time() - (int)strtotime($info['checked_at'])) > 3600) {
-            upd_checkGithub();
-            $info = upd_readVersion();
-        }
         return !empty($info['update_available']);
     } catch (\Throwable $e) {
         return false;

@@ -50,14 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($nome))  $erros[] = 'Nome é obrigatório.';
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $erros[] = 'E-mail inválido.';
 
-        // Verificar se é o único admin
-        if ($tipo !== 'admin') {
+        // Verificar se é o único admin (protege contra rebaixamento E desativação)
+        $isCurrentAdmin = $db->prepare("SELECT tipo FROM usuarios WHERE id=?");
+        $isCurrentAdmin->execute([$id]);
+        $curTipo = $isCurrentAdmin->fetchColumn();
+        if ($curTipo === 'admin') {
             $nAdmins = (int)$db->query("SELECT COUNT(*) FROM usuarios WHERE tipo='admin' AND ativo=1")->fetchColumn();
-            $isCurrentAdmin = $db->prepare("SELECT tipo FROM usuarios WHERE id=?");
-            $isCurrentAdmin->execute([$id]);
-            $curTipo = $isCurrentAdmin->fetchColumn();
-            if ($curTipo === 'admin' && $nAdmins <= 1) {
-                $erros[] = 'Não é possível rebaixar o único administrador ativo.';
+            if ($nAdmins <= 1 && ($tipo !== 'admin' || $ativo === 0)) {
+                $erros[] = 'Não é possível rebaixar ou desativar o único administrador ativo.';
             }
         }
 
