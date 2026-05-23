@@ -166,5 +166,32 @@ if (isAdmin()) {
 </div>
 <?php endif; ?>
 
+<?php if (isAdmin() && !$temAtualizacao): ?>
+<script>
+// Verificação assíncrona de atualização (não bloqueia a página)
+setTimeout(function() {
+  fetch('<?= BASE_PATH ?>/admin/ajax/update_check.php', {
+    credentials: 'same-origin',
+    headers: {'X-Requested-With': 'XMLHttpRequest'}
+  })
+  .then(function(r) { return r.ok ? r.json() : null; })
+  .then(function(data) {
+    if (!data || !data.update_available) return;
+    var t = document.createElement('div');
+    t.id = 'upd-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--secondary,#c9a227);color:#fff;padding:13px 18px;border-radius:10px;font-size:.87rem;font-weight:700;box-shadow:0 4px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:10px;animation:upd-slide-in .3s ease;';
+    t.innerHTML = '<i class="bi bi-cloud-arrow-up-fill"></i>'
+      + '<span>Nova atualização disponível!</span>'
+      + '<a href="<?= BASE_PATH ?>/admin/atualizacoes.php" style="color:#fff;text-decoration:underline;white-space:nowrap;">Ver agora</a>'
+      + '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:#fff;cursor:pointer;padding:0 0 0 4px;font-size:1rem;line-height:1;">✕</button>';
+    document.body.appendChild(t);
+    setTimeout(function() { var el = document.getElementById('upd-toast'); if (el) el.remove(); }, 10000);
+  })
+  .catch(function() {});
+}, 4000);
+</script>
+<style>@keyframes upd-slide-in{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+<?php endif; ?>
+
 <!-- Main -->
 <main class="admin-main">

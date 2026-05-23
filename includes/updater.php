@@ -1,7 +1,6 @@
 <?php
 // Sistema de atualização via GitHub — compatível com cPanel (ZIP, sem git)
 
-// Arquivos/pastas nunca sobrescritos durante atualização
 const UPD_PRESERVE = [
     'config/database.php',
     'config/.installed',
@@ -19,7 +18,7 @@ function upd_readVersion(): array {
     $file = upd_versionFile();
     if (file_exists($file)) {
         $data = json_decode((string)file_get_contents($file), true);
-        if (is_array($data) && !empty($data['commit'])) return $data;
+        if (is_array($data) && isset($data['commit'])) return $data;
     }
     return upd_initVersion();
 }
@@ -47,27 +46,10 @@ function upd_initVersion(): array {
     return $data;
 }
 
-// ── Download via file_get_contents ou cURL ──────────────────────────────────
+// ── Download para chamadas de API (JSON) ─────────────────────────────────────
 
 function upd_download(string $url, array $headers = [], int $timeout = 30): string|false {
-    // Tenta file_get_contents (allow_url_fopen)
-    if (ini_get('allow_url_fopen')) {
-        $ctx = stream_context_create([
-            'http' => [
-                'method'          => 'GET',
-                'header'          => implode("\r\n", $headers),
-                'timeout'         => $timeout,
-                'follow_location' => true,
-                'max_redirects'   => 10,
-                'ignore_errors'   => true,
-            ],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-        ]);
-        $result = @file_get_contents($url, false, $ctx);
-        if ($result !== false && strlen($result) > 0) return $result;
-    }
-
-    // Fallback: cURL
+    // cURL preferido: melhor tratamento de redirecionamentos e códigos HTTP
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -84,15 +66,117 @@ function upd_download(string $url, array $headers = [], int $timeout = 30): stri
         $code   = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         if ($result !== false && $code === 200) return (string)$result;
+        // Se houve resposta HTTP (mesmo que erro), não tenta file_get_contents
+        if ($code > 0) return false;
+    }
+
+    // Fallback: file_get_contents
+    if (ini_get('allow_url_fopen')) {
+        $ctx = stream_context_create([
+            'http' => [
+                'method'          => 'GET',
+                'header'          => implode("\r\n", $headers),
+                'timeout'         => $timeout,
+                'follow_location' => true,
+                'max_redirects'   => 10,
+                'ignore_errors'   => true,
+            ],
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+        ]);
+        $result = @file_get_contents($url, false, $ctx);
+        if ($result !== false && strlen($result) > 0) {
+            // Verifica o último código HTTP na cadeia de redirecionamentos
+            $lastStatus = 0;
+            foreach ((array)($http_response_header ?? []) as $h) {
+                if (preg_match('/^HTTP\/\S+\s+(\d+)/', $h, $m)) {
+                    $lastStatus = (int)$m[1];
+                }
+            }
+            if ($lastStatus === 200 || $lastStatus === 0) return $result;
+        }
     }
 
     return false;
 }
 
+// ── Download de arquivo binário (ZIP) via streaming ──────────────────────────
+
+function upd_downloadFile(string $url, string $destPath, array $headers = [], int $timeout = 180): array {
+    // cURL streaming: sem carregar o ZIP inteiro na memória
+    if (function_exists('curl_init')) {
+        $fp = @fopen($destPath, 'wb');
+        if (!$fp) {
+            return ['ok' => false, 'error' => 'Sem permissão para criar arquivo temporário: ' . $destPath];
+        }
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_FILE           => $fp,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_USERAGENT      => 'SistemaCursos-Updater/1.0',
+            // Por padrão, cURL NÃO reenvia Authorization em redirecionamentos cross-domain
+            CURLOPT_UNRESTRICTED_AUTH => false,
+        ]);
+        $ok   = (bool)curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $size = (int)curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD);
+        $err  = curl_error($ch);
+        curl_close($ch);
+        fclose($fp);
+
+        if ($ok && $code === 200 && $size > 100) {
+            // Valida bytes mágicos do ZIP (PK)
+            $fh    = @fopen($destPath, 'rb');
+            $magic = $fh ? fread($fh, 2) : '';
+            if ($fh) fclose($fh);
+            if ($magic === 'PK') {
+                return ['ok' => true, 'error' => '', 'size' => $size];
+            }
+            @unlink($destPath);
+            return ['ok' => false, 'error' => "Arquivo baixado não é um ZIP válido (HTTP {$code}, {$size} bytes). URL: {$url}"];
+        }
+        @unlink($destPath);
+        $msg = "HTTP {$code}";
+        if ($err) $msg .= " — {$err}";
+        return ['ok' => false, 'error' => "Falha no download via cURL ({$msg}). URL: {$url}"];
+    }
+
+    // Fallback: file_get_contents (carrega na memória)
+    if (ini_get('allow_url_fopen')) {
+        // Remove Authorization para evitar conflito em redirecionamentos (S3 / codeload)
+        $safeHeaders = array_values(array_filter($headers, fn($h) => stripos($h, 'authorization:') === false));
+        $ctx = stream_context_create([
+            'http' => [
+                'method'          => 'GET',
+                'header'          => implode("\r\n", $safeHeaders),
+                'timeout'         => $timeout,
+                'follow_location' => true,
+                'max_redirects'   => 10,
+                'ignore_errors'   => true,
+            ],
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+        ]);
+        $content = @file_get_contents($url, false, $ctx);
+        if ($content !== false && strlen($content) > 100 && substr($content, 0, 2) === 'PK') {
+            if (@file_put_contents($destPath, $content)) {
+                return ['ok' => true, 'error' => '', 'size' => strlen($content)];
+            }
+            return ['ok' => false, 'error' => 'Sem permissão para gravar arquivo temporário: ' . $destPath];
+        }
+        return ['ok' => false, 'error' => 'Download via allow_url_fopen falhou ou retornou conteúdo inválido. Dica: habilite a extensão cURL no cPanel para melhor compatibilidade.'];
+    }
+
+    return ['ok' => false, 'error' => 'Nenhum método de download disponível (cURL ou allow_url_fopen).'];
+}
+
 // ── Capacidades do servidor ──────────────────────────────────────────────────
 
 function upd_canDownload(): bool {
-    return (bool)ini_get('allow_url_fopen') || function_exists('curl_init');
+    return function_exists('curl_init') || (bool)ini_get('allow_url_fopen');
 }
 
 function upd_canExtract(): bool {
@@ -130,31 +214,36 @@ function upd_checkGithub(bool $force = false): array {
     if ($token) $headers[] = 'Authorization: Bearer ' . $token;
 
     $url = "https://api.github.com/repos/{$repo}/commits/{$branch}";
-    $raw = upd_download($url, $headers, 10);
+    $raw = upd_download($url, $headers, 15);
 
     $info['checked_at'] = date('Y-m-d H:i:s');
     $info['api_error']  = null;
 
-    if ($raw !== false && strlen($raw) > 10) {
+    if ($raw === false) {
+        $info['api_error'] = 'Não foi possível conectar à API do GitHub. Verifique a conectividade do servidor.';
+    } else {
         $data = json_decode($raw, true);
-        if (isset($data['sha'])) {
+        if (!is_array($data)) {
+            $info['api_error'] = 'Resposta inválida da API do GitHub (não é JSON). Verifique o token e o nome do branch.';
+        } elseif (isset($data['sha'])) {
             $short = substr($data['sha'], 0, 7);
+
+            // Auto-inicializa a versão instalada na primeira verificação
+            if (($info['commit'] ?? 'desconhecido') === 'desconhecido') {
+                $info['commit'] = $short;
+            }
+
             $info['latest_sha']       = $data['sha'];
             $info['latest_commit']    = $short;
             $info['latest_message']   = trim($data['commit']['message'] ?? '');
             $info['latest_date']      = $data['commit']['committer']['date'] ?? '';
             $info['latest_author']    = $data['commit']['author']['name'] ?? '';
-            $info['update_available'] = (
-                $info['commit'] !== 'desconhecido' &&
-                $short !== $info['commit']
-            );
+            $info['update_available'] = ($short !== $info['commit']);
         } elseif (!empty($data['message'])) {
-            $info['api_error'] = $data['message'];
+            $info['api_error'] = 'GitHub API: ' . $data['message'];
         } else {
-            $info['api_error'] = 'Resposta inválida da API do GitHub.';
+            $info['api_error'] = 'Resposta inesperada da API do GitHub.';
         }
-    } else {
-        $info['api_error'] = 'Não foi possível conectar à API do GitHub.';
     }
 
     upd_writeVersion($info);
@@ -175,13 +264,13 @@ function upd_hasUpdate(): bool {
 
 function upd_executeUpdate(): array {
     if (!upd_canDownload()) {
-        return ['sucesso' => false, 'output' => 'Nenhum método de download disponível. Habilite allow_url_fopen ou a extensão cURL no PHP (cPanel → Selecionar Versão do PHP → Extensões).'];
+        return ['sucesso' => false, 'output' => 'Nenhum método de download disponível. Ative allow_url_fopen ou a extensão cURL (cPanel → Selecionar Versão do PHP → Extensões).'];
     }
     if (!upd_canExtract()) {
-        return ['sucesso' => false, 'output' => 'A extensão ZipArchive não está disponível. Ative-a em: cPanel → Selecionar Versão do PHP → Extensões → zip.'];
+        return ['sucesso' => false, 'output' => 'Extensão ZipArchive indisponível. Ative em: cPanel → Selecionar Versão do PHP → Extensões → zip.'];
     }
     if (!upd_canWrite()) {
-        return ['sucesso' => false, 'output' => 'Sem permissão de escrita no diretório do sistema. Ajuste as permissões via cPanel → Gerenciador de Arquivos.'];
+        return ['sucesso' => false, 'output' => 'Sem permissão de escrita no diretório do sistema. Ajuste via cPanel → Gerenciador de Arquivos (permissão 755).'];
     }
 
     @set_time_limit(300);
@@ -193,56 +282,57 @@ function upd_executeUpdate(): array {
     $sha    = $info['latest_sha'] ?? null;
     $token  = function_exists('getConfig') ? getConfig('github_token', '') : '';
 
-    // Montar URL e headers do download
+    // Monta URL e headers
     $headers = ['User-Agent: SistemaCursos-Updater/1.0'];
     if ($token) {
-        // Via API — funciona para repos públicos e privados
-        $ref     = $sha ?? $branch;
-        $zipUrl  = "https://api.github.com/repos/{$repo}/zipball/{$ref}";
+        $ref    = $sha ?? $branch;
+        $zipUrl = "https://api.github.com/repos/{$repo}/zipball/{$ref}";
         $headers[] = 'Authorization: Bearer ' . $token;
         $headers[] = 'Accept: application/vnd.github+json';
     } else {
-        // URL pública do GitHub (apenas repos públicos)
-        $ref    = $sha ?? "refs/heads/{$branch}";
+        $ref    = $sha ?? 'refs/heads/' . $branch;
         $zipUrl = "https://github.com/{$repo}/archive/{$ref}.zip";
     }
 
-    // 1. Baixar ZIP
-    $zipContent = upd_download($zipUrl, $headers, 180);
-    if ($zipContent === false || strlen($zipContent) < 200) {
-        $dica = !$token ? ' Dica: configure um GitHub Token se o repositório for privado.' : '';
-        return ['sucesso' => false, 'output' => "Falha ao baixar a atualização.{$dica}\nURL: {$zipUrl}"];
-    }
-
-    // 2. Salvar ZIP temporariamente dentro de config/ (garantidamente gravável)
+    // 1. Baixar ZIP direto para arquivo temporário
     $tmpTag = time() . '_' . substr(md5(mt_rand()), 0, 6);
     $tmpZip = ROOT_PATH . '/config/.upd_' . $tmpTag . '.zip';
     $tmpDir = ROOT_PATH . '/config/.upd_' . $tmpTag;
 
-    if (!@file_put_contents($tmpZip, $zipContent)) {
-        return ['sucesso' => false, 'output' => 'Sem permissão para gravar arquivo temporário em ' . ROOT_PATH . '/config/'];
+    $dl = upd_downloadFile($zipUrl, $tmpZip, $headers, 180);
+    if (!$dl['ok']) {
+        $dica = '';
+        if (!$token) {
+            $dica = "\nDica: configure um GitHub Token nas configurações se o repositório for privado.";
+        }
+        if (!function_exists('curl_init')) {
+            $dica .= "\nDica: habilite a extensão cURL no cPanel para melhor compatibilidade com redirecionamentos do GitHub.";
+        }
+        return ['sucesso' => false, 'output' => $dl['error'] . $dica];
     }
-    unset($zipContent); // libera memória
 
-    // 3. Extrair ZIP
+    $sizeKb = round(($dl['size'] ?? @filesize($tmpZip)) / 1024);
+
+    // 2. Extrair ZIP
     $zip = new ZipArchive();
     $res = $zip->open($tmpZip);
     if ($res !== true) {
         @unlink($tmpZip);
-        return ['sucesso' => false, 'output' => 'Falha ao abrir o arquivo ZIP (código ZipArchive: ' . $res . ')'];
+        return ['sucesso' => false, 'output' => "Falha ao abrir o arquivo ZIP (código ZipArchive: {$res}, tamanho: {$sizeKb} KB)."];
     }
 
     @mkdir($tmpDir, 0755, true);
     $extracted = $zip->extractTo($tmpDir);
+    $total     = $zip->count();
     $zip->close();
     @unlink($tmpZip);
 
     if (!$extracted) {
         upd_rrmdir($tmpDir);
-        return ['sucesso' => false, 'output' => 'Falha ao extrair o arquivo ZIP.'];
+        return ['sucesso' => false, 'output' => "Falha ao extrair o arquivo ZIP ({$total} entradas, {$sizeKb} KB)."];
     }
 
-    // 4. Encontrar subdiretório gerado pelo GitHub (ex: repo-abc1234/)
+    // 3. Encontrar subdiretório gerado pelo GitHub (ex: repo-abc1234/)
     $subdirs = array_filter((array)glob($tmpDir . '/*'), 'is_dir');
     if (empty($subdirs)) {
         upd_rrmdir($tmpDir);
@@ -250,7 +340,7 @@ function upd_executeUpdate(): array {
     }
     $srcDir = (string)reset($subdirs);
 
-    // 5. Copiar arquivos, respeitando lista de preservação
+    // 4. Copiar arquivos, preservando config/uploads/logs
     $copied = 0;
     $errors = [];
 
@@ -280,7 +370,7 @@ function upd_executeUpdate(): array {
         }
     }
 
-    // 6. Limpar temporários
+    // 5. Limpar temporários
     upd_rrmdir($tmpDir);
 
     if (!empty($errors)) {
@@ -288,14 +378,18 @@ function upd_executeUpdate(): array {
         return ['sucesso' => false, 'output' => "Copiados {$copied} arquivo(s). Erro em " . count($errors) . " arquivo(s): {$errsText}"];
     }
 
-    // 7. Gravar nova versão
+    // 6. Grava nova versão
     $newCommit = $sha ? substr($sha, 0, 7) : ($info['latest_commit'] ?? 'unknown');
     $info['commit']           = $newCommit;
     $info['update_available'] = false;
     $info['updated_at']       = date('Y-m-d H:i:s');
     upd_writeVersion($info);
 
-    return ['sucesso' => true, 'output' => "{$copied} arquivo(s) atualizado(s) com sucesso.", 'commit' => $newCommit];
+    return [
+        'sucesso' => true,
+        'output'  => "{$copied} arquivo(s) atualizado(s) com sucesso. ({$sizeKb} KB baixados)",
+        'commit'  => $newCommit,
+    ];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

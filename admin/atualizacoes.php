@@ -3,8 +3,6 @@ $pageTitle = 'Atualizações do Sistema';
 require_once __DIR__ . '/includes/header.php';
 requireAdmin();
 
-require_once ROOT_PATH . '/includes/updater.php';
-
 $resultado = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,11 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = sanitize($_POST['acao'] ?? '');
 
     if ($acao === 'verificar') {
+        $prev = upd_readVersion();
         $info = upd_checkGithub(true);
         if (!empty($info['api_error'])) {
             redirect('/admin/atualizacoes.php', 'Erro ao verificar: ' . $info['api_error'], 'danger');
         }
-        redirect('/admin/atualizacoes.php', 'Verificação concluída.', 'success');
+        $msg = 'Verificação concluída.';
+        if (($prev['commit'] ?? '') === 'desconhecido' && !empty($info['latest_commit'])) {
+            $msg = 'Versão atual inicializada como ' . h($info['commit']) . '. Futuras atualizações serão detectadas automaticamente.';
+        }
+        redirect('/admin/atualizacoes.php', $msg, 'success');
     }
 
     if ($acao === 'atualizar') {
@@ -55,10 +58,8 @@ $canExtract  = upd_canExtract();
 $canWrite    = upd_canWrite();
 $canUpdate   = $canDownload && $canExtract && $canWrite;
 
-// Método de download detectado
-$dlMethod = '';
-if (ini_get('allow_url_fopen')) $dlMethod = 'allow_url_fopen';
-elseif (function_exists('curl_init')) $dlMethod = 'cURL';
+// Método de download preferido
+$dlMethod = function_exists('curl_init') ? 'cURL (preferido)' : (ini_get('allow_url_fopen') ? 'allow_url_fopen' : '');
 ?>
 
 <div class="row g-4">
@@ -214,16 +215,16 @@ elseif (function_exists('curl_init')) $dlMethod = 'cURL';
         <?php
         $checks = [
             [
-                'label' => 'Download (allow_url_fopen)',
-                'ok'    => (bool)ini_get('allow_url_fopen'),
-                'valor' => ini_get('allow_url_fopen') ? 'ativo' : '',
-                'fix'   => 'cPanel → PHP → allow_url_fopen = On',
+                'label' => 'Download via cURL',
+                'ok'    => function_exists('curl_init'),
+                'valor' => function_exists('curl_init') ? 'disponível (recomendado)' : '',
+                'fix'   => 'cPanel → Selecionar Versão do PHP → Extensões → curl',
             ],
             [
-                'label' => 'Download alternativo (cURL)',
-                'ok'    => function_exists('curl_init'),
-                'valor' => function_exists('curl_init') ? 'disponível' : '',
-                'fix'   => 'cPanel → Selecionar Versão do PHP → curl',
+                'label' => 'Download via allow_url_fopen',
+                'ok'    => (bool)ini_get('allow_url_fopen'),
+                'valor' => ini_get('allow_url_fopen') ? 'ativo (fallback)' : '',
+                'fix'   => 'cPanel → PHP → allow_url_fopen = On',
             ],
             [
                 'label' => 'Extração ZIP (ZipArchive)',
