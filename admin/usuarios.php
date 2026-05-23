@@ -1,4 +1,4 @@
-<?php
+<?php ob_start();
 $pageTitle = 'Gerenciar Usuários';
 require_once __DIR__ . '/includes/header.php';
 requireAdmin();

@@ -1,4 +1,4 @@
-<?php
+<?php ob_start();
 $pageTitle = 'Configurações do Sistema';
 require_once __DIR__ . '/includes/header.php';
 requireAdmin();
