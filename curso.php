@@ -94,11 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Curso gratuito — não processa cartão
                 $statusPagamento = 'confirmado';
             } else {
-                $ipToken     = $_POST['ip_token'] ?? '';
-                $ipSessionId = $_POST['ip_session_id'] ?? '';
-                $cvv         = preg_replace('/\D/', '', $_POST['cartao_cvv'] ?? '');
-                $nomeCartao  = sanitize($_POST['cartao_nome_titular'] ?? $formData['nome_completo']);
-                $parcelas    = max(1, min(12, (int)($_POST['parcelas'] ?? 1)));
+                $ipCustom    = filter_input(INPUT_POST, 'infinitepay_custom', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?: [];
+                $ipToken     = sanitize_text_field($ipCustom['token'] ?? '');
+                $ipSessionId = sanitize_text_field($ipCustom['uuid'] ?? '');
+                $cvv         = preg_replace('/\D/', '', $ipCustom['cvv'] ?? '');
+                $nomeCartao  = $formData['nome_completo'];
+                $parcelas    = max(1, min(12, (int)($ipCustom['installments'] ?? 1)));
 
                 if (empty($ipToken)) {
                     $erros[] = 'Falha na tokenização do cartão. Tente novamente.';
@@ -317,11 +318,8 @@ require_once __DIR__ . '/includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
             <input type="hidden" name="forma_pagamento" id="forma_pagamento" value="<?= h($formData['forma_pagamento'] ?? '') ?>">
             <?php if ($ipayDisponivel): ?>
-            <input type="hidden" name="ip_token" id="ip_token" value="">
-            <input type="hidden" name="ip_session_id" id="ip_session_id" value="">
-            <input type="hidden" name="cartao_cvv" id="cartao_cvv_hidden" value="">
-            <input type="hidden" name="cartao_nome_titular" id="cartao_nome_titular_hidden" value="">
-            <input type="hidden" name="parcelas" id="parcelas_hidden" value="1">
+            <input type="hidden" id="ip-token" name="infinitepay_custom[token]" value="">
+            <input type="hidden" id="ip-uuid" name="infinitepay_custom[uuid]" value="">
             <?php endif; ?>
 
             <div class="row g-3">
@@ -422,47 +420,49 @@ require_once __DIR__ . '/includes/header.php';
                     <i class="bi bi-exclamation-triangle me-1"></i> Modo de testes ativo. Nenhuma cobrança real será efetuada.
                   </div>
                   <?php endif; ?>
+                  <input type="hidden" data-ip="method" value="credit_card">
                   <div class="row g-2">
                     <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Número do Cartão</label>
-                      <input type="text" class="form-control" id="cartao_numero" data-ip="card_number"
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Número do Cartão <span style="color:var(--accent)">*</span></label>
+                      <input type="tel" class="form-control" id="cartao_numero" data-ip="card-number"
                              maxlength="19" placeholder="0000 0000 0000 0000" autocomplete="cc-number"
                              style="letter-spacing:.08em;font-size:1rem;">
                     </div>
-                    <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Nome Impresso no Cartão</label>
-                      <input type="text" class="form-control" id="cartao_nome" data-ip="card_holder_name"
-                             maxlength="50" placeholder="NOME SOBRENOME" autocomplete="cc-name"
-                             style="text-transform:uppercase;">
-                    </div>
-                    <div class="col-4">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Mês</label>
-                      <input type="text" class="form-control" id="cartao_mes" data-ip="expiration_month"
+                    <div class="col-5">
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Mês <span style="color:var(--accent)">*</span></label>
+                      <input type="tel" class="form-control" id="cartao_mes" data-ip="card-expiration-month"
                              maxlength="2" placeholder="MM" autocomplete="cc-exp-month">
                     </div>
                     <div class="col-4">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Ano</label>
-                      <input type="text" class="form-control" id="cartao_ano" data-ip="expiration_year"
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Ano <span style="color:var(--accent)">*</span></label>
+                      <input type="tel" class="form-control" id="cartao_ano" data-ip="card-expiration-year"
                              maxlength="2" placeholder="AA" autocomplete="cc-exp-year">
                     </div>
-                    <div class="col-4">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">CVV</label>
-                      <input type="text" class="form-control" id="cartao_cvv" data-ip="cvv"
-                             maxlength="4" placeholder="123" autocomplete="cc-csc">
+                    <div class="col-3">
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">CVV <span style="color:var(--accent)">*</span></label>
+                      <input type="tel" class="form-control" id="cartao_cvv" data-ip="card-cvv"
+                             name="infinitepay_custom[cvv]" maxlength="4" placeholder="123" autocomplete="cc-csc">
                     </div>
-                    <?php if (count($parcelasDisponiveis) > 1): ?>
-                    <div class="col-12 mt-1">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Parcelamento</label>
-                      <select class="form-select" id="parcelas_select">
+                    <div class="col-12">
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">CPF do titular do cartão <span style="color:var(--accent)">*</span></label>
+                      <input type="tel" class="form-control" id="cartao_cpf" data-ip="card-holder-document"
+                             name="infinitepay_custom[doc_number]" maxlength="14" placeholder="000.000.000-00"
+                             value="<?= h(isset($formData['cpf']) ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $formData['cpf']) : '') ?>">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Parcelamento <span style="color:var(--accent)">*</span></label>
+                      <select class="form-select" id="parcelas_select" name="infinitepay_custom[installments]">
                         <?php foreach ($parcelasDisponiveis as $parc): ?>
                         <option value="<?= $parc['n'] ?>">
-                          <?= $parc['n'] ?>x de R$ <?= number_format($parc['por_parcela'], 2, ',', '.') ?>
-                          <?= $parc['tem_juros'] ? ' (total R$ ' . number_format($parc['total'], 2, ',', '.') . ')' : ' (sem juros)' ?>
+                          <?php if ($parc['n'] === 1): ?>
+                            R$ <?= number_format($parc['por_parcela'], 2, ',', '.') ?> à vista (sem juros)
+                          <?php else: ?>
+                            <?= $parc['n'] ?>x de R$ <?= number_format($parc['por_parcela'], 2, ',', '.') ?> <?= $parc['tem_juros'] ? 'com juros (total R$ ' . number_format($parc['total'], 2, ',', '.') . ')' : 'sem juros' ?>
+                          <?php endif; ?>
                         </option>
                         <?php endforeach; ?>
                       </select>
                     </div>
-                    <?php endif; ?>
                   </div>
                   <div id="cartao-erro" class="alert alert-danger mt-3 d-none" style="border-radius:8px;font-size:.87rem;"></div>
                   <div id="cartao-loading" class="mt-3 d-none text-center" style="color:var(--primary);font-size:.9rem;">
@@ -595,22 +595,30 @@ require_once __DIR__ . '/includes/header.php';
     ipayInstance = new IPay({ access_token: IPAY_ACCESS_TOKEN });
     ipayInstance.listeners = {
       'result:success': function() {
+        // ipay.js injects input[name="ip[token]"] and input[name="ip[session_id]"] into the form
         var tokenField = document.querySelector("input[name='ip[token]']");
         var sessField  = document.querySelector("input[name='ip[session_id]']");
-        if (tokenField) document.getElementById('ip_token').value = tokenField.value;
-        if (sessField)  document.getElementById('ip_session_id').value = sessField.value;
-        if (submitPending && document.getElementById('ip_token').value) {
+        if (tokenField) document.getElementById('ip-token').value = tokenField.value;
+        if (sessField)  document.getElementById('ip-uuid').value  = sessField.value;
+        if (submitPending && document.getElementById('ip-token').value) {
           submitPending = false;
           document.getElementById('form-inscricao').submit();
         }
       },
-      'result:error': function(errors) {
+      'result:error': function() {
         submitPending = false;
-        mostrarErroCartao('Falha ao validar os dados do cartão. Verifique e tente novamente.');
+        mostrarErroCartao('Falha ao validar os dados do cartão. Verifique os dados e tente novamente.');
         ocultarLoading();
       }
     };
     ipayReady = true;
+
+    // Auto-fill CPF from registration form
+    var cpfReg = document.getElementById('cpf');
+    var cpfCard = document.getElementById('cartao_cpf');
+    if (cpfReg && cpfCard && !cpfCard.value) {
+      cpfCard.value = cpfReg.value;
+    }
   }
 
   function mostrarErroCartao(msg) {
@@ -626,43 +634,36 @@ require_once __DIR__ . '/includes/header.php';
   function mostrarLoading() {
     var el = document.getElementById('cartao-loading');
     if (el) el.classList.remove('d-none');
+    var btn = document.querySelector('.btn-submit');
+    if (btn) btn.disabled = true;
   }
 
   function ocultarLoading() {
     var el = document.getElementById('cartao-loading');
     if (el) el.classList.add('d-none');
+    var btn = document.querySelector('.btn-submit');
+    if (btn) btn.disabled = false;
   }
 
   function validarCamposCartao() {
-    var num  = (document.getElementById('cartao_numero')?.value || '').replace(/\D/g,'');
-    var nome = (document.getElementById('cartao_nome')?.value || '').trim();
-    var mes  = (document.getElementById('cartao_mes')?.value || '').trim();
-    var ano  = (document.getElementById('cartao_ano')?.value || '').trim();
-    var cvv  = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
-    if (num.length < 13)  { mostrarErroCartao('Número do cartão inválido.'); return false; }
-    if (!nome)            { mostrarErroCartao('Informe o nome impresso no cartão.'); return false; }
-    if (!mes || mes < 1 || mes > 12) { mostrarErroCartao('Mês de validade inválido.'); return false; }
-    if (!ano || ano.length < 2)      { mostrarErroCartao('Ano de validade inválido.'); return false; }
-    if (cvv.length < 3)  { mostrarErroCartao('CVV inválido.'); return false; }
+    var num = (document.getElementById('cartao_numero')?.value || '').replace(/\D/g,'');
+    var mes = (document.getElementById('cartao_mes')?.value || '').replace(/\D/g,'');
+    var ano = (document.getElementById('cartao_ano')?.value || '').replace(/\D/g,'');
+    var cvv = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
+    var cpf = (document.getElementById('cartao_cpf')?.value || '').replace(/\D/g,'');
+    if (num.length < 13)       { mostrarErroCartao('Número do cartão inválido.'); return false; }
+    if (!mes || +mes < 1 || +mes > 12) { mostrarErroCartao('Mês de validade inválido (01–12).'); return false; }
+    if (!ano || ano.length < 2){ mostrarErroCartao('Ano de validade inválido.'); return false; }
+    if (cvv.length < 3)        { mostrarErroCartao('Código CVV inválido.'); return false; }
+    if (cpf.length !== 11)     { mostrarErroCartao('CPF do titular inválido.'); return false; }
     return true;
   }
 
   document.getElementById('form-inscricao').addEventListener('submit', function(e) {
-    var forma = document.getElementById('forma_pagamento').value;
-    if (forma !== 'cartao') return; // let non-card submit proceed normally
-
+    if (document.getElementById('forma_pagamento').value !== 'cartao') return;
     e.preventDefault();
     ocultarErroCartao();
-
     if (!validarCamposCartao()) return;
-
-    // Copy CVV and name to hidden fields
-    var cvv  = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
-    var nome = (document.getElementById('cartao_nome')?.value || '').trim().toUpperCase();
-    var parc = document.getElementById('parcelas_select')?.value || '1';
-    document.getElementById('cartao_cvv_hidden').value = cvv;
-    document.getElementById('cartao_nome_titular_hidden').value = nome;
-    document.getElementById('parcelas_hidden').value = parc;
 
     mostrarLoading();
 
@@ -673,24 +674,29 @@ require_once __DIR__ . '/includes/header.php';
     }
 
     submitPending = true;
-    var form = document.getElementById('form-inscricao');
-    ipayInstance.generate(form);
+    ipayInstance.generate(document.getElementById('form-inscricao'));
   });
 
-  // Format card number input
-  var numInput = document.getElementById('cartao_numero');
-  if (numInput) {
-    numInput.addEventListener('input', function() {
-      var v = this.value.replace(/\D/g,'').substring(0,16);
-      this.value = v.replace(/(.{4})/g,'$1 ').trim();
-    });
-  }
+  // Mask: card number groups of 4
+  document.getElementById('cartao_numero')?.addEventListener('input', function() {
+    var v = this.value.replace(/\D/g,'').substring(0,16);
+    this.value = v.replace(/(.{4})/g,'$1 ').trim();
+  });
 
-  // Load ipay.js script
-  var script = document.createElement('script');
-  script.src = <?= json_encode($ipay->getIpayJsUrl()) ?>;
-  script.onload = initIpay;
-  document.head.appendChild(script);
+  // Mask: CPF card
+  document.getElementById('cartao_cpf')?.addEventListener('input', function() {
+    var v = this.value.replace(/\D/g,'').substring(0,11);
+    v = v.replace(/^(\d{3})(\d)/,'$1.$2');
+    v = v.replace(/^(\d{3}\.\d{3})(\d)/,'$1.$2');
+    v = v.replace(/^(\d{3}\.\d{3}\.\d{3})(\d)/,'$1-$2');
+    this.value = v;
+  });
+
+  // Load ipay.js
+  var s = document.createElement('script');
+  s.src = <?= json_encode($ipay->getIpayJsUrl()) ?>;
+  s.onload = initIpay;
+  document.head.appendChild(s);
 })();
 </script>
 <?php endif; ?>
