@@ -26,15 +26,9 @@ $vagasRestantes = $curso['vagas'] !== null ? max(0, $curso['vagas'] - $inscritos
 // Verificar disponibilidade do InfinitePay
 $ipay = new InfinitePay();
 $ipayDisponivel = getConfig('cartao_ativo') === '1' && $ipay->isConfigured();
-$ipayTokenizacaoToken = null;
 if ($ipayDisponivel) {
     InfinitePay::migrarColunas();
-    $ipayTokenizacaoToken = $ipay->obterTokenTokenizacao();
-    if (!$ipayTokenizacaoToken) {
-        $ipayDisponivel = false;
-    }
 }
-$parcelasDisponiveis = $ipayDisponivel ? $ipay->calcularParcelas((float)$curso['valor']) : [];
 
 // Processar inscrição
 $erros    = [];
@@ -81,83 +75,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Processamento de pagamento
-        $statusPagamento     = 'pendente';
-        $paymentId           = null;
-        $paymentInstallments = 1;
-        $erroCartao          = false;
-
-        if (empty($erros) && $formData['forma_pagamento'] === 'cartao') {
-            if (!$ipayDisponivel) {
-                $erros[] = 'Pagamento por cartão não está disponível no momento.';
-            } elseif ((float)$curso['valor'] <= 0) {
-                // Curso gratuito — não processa cartão
-                $statusPagamento = 'confirmado';
-            } else {
-                $ipCustom    = filter_input(INPUT_POST, 'infinitepay_custom', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?: [];
-                $ipToken     = sanitize_text_field($ipCustom['token'] ?? '');
-                $ipSessionId = sanitize_text_field($ipCustom['uuid'] ?? '');
-                $cvv         = preg_replace('/\D/', '', $ipCustom['cvv'] ?? '');
-                $nomeCartao  = $formData['nome_completo'];
-                $parcelas    = max(1, min(12, (int)($ipCustom['installments'] ?? 1)));
-
-                if (empty($ipToken)) {
-                    $erros[] = 'Falha na tokenização do cartão. Tente novamente.';
-                    $erroCartao = true;
-                } elseif (empty($cvv)) {
-                    $erros[] = 'CVV do cartão é obrigatório.';
-                } else {
-                    $resultado = $ipay->criarTransacao([
-                        'valor'         => (float)$curso['valor'],
-                        'parcelas'      => $parcelas,
-                        'token'         => $ipToken,
-                        'session_id'    => $ipSessionId,
-                        'nome_cartao'   => $nomeCartao,
-                        'cvv'           => $cvv,
-                        'cpf'           => $formData['cpf'],
-                        'nome'          => $formData['nome_completo'],
-                        'email'         => $formData['email'],
-                        'telefone'      => $formData['telefone'],
-                        'endereco'      => $formData['endereco'],
-                        'curso_id'      => $curso['id'],
-                        'curso_nome'    => $curso['nome'],
-                        'inscricao_ref' => 'C' . $curso['id'] . '-' . time(),
-                    ]);
-
-                    if ($resultado['sucesso']) {
-                        $statusPagamento     = 'confirmado';
-                        $paymentId           = $resultado['payment_id'];
-                        $paymentInstallments = $resultado['parcelas'];
-                    } else {
-                        $erros[]    = $resultado['erro'];
-                        $erroCartao = true;
-                    }
-                }
-            }
+        // Pagamento por cartão: verificar disponibilidade
+        if (empty($erros) && $formData['forma_pagamento'] === 'cartao' && !$ipayDisponivel) {
+            $erros[] = 'Pagamento por cartão não está disponível no momento.';
         }
 
+        // Salvar inscrição
+        $statusPagamento = ((float)$curso['valor'] <= 0) ? 'confirmado' : 'pendente';
+
         if (empty($erros)) {
-            $cols = 'curso_id, nome_completo, profissao, email, endereco, cpf, rg, formacao, telefone, forma_pagamento, status_pagamento';
-            $vals = '?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?';
-            $params = [
+            $db->prepare(
+                'INSERT INTO inscricoes (curso_id, nome_completo, profissao, email, endereco, cpf, rg, formacao, telefone, forma_pagamento, status_pagamento)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            )->execute([
                 $curso['id'], $formData['nome_completo'], $formData['profissao'],
                 $formData['email'], $formData['endereco'], $formData['cpf'],
                 $formData['rg'], $formData['formacao'], $formData['telefone'],
                 $formData['forma_pagamento'], $statusPagamento,
-            ];
-            // Include payment columns if they exist (migrarColunas already ran for cartao)
-            if ($paymentId !== null) {
-                $cols   .= ', payment_id, payment_installments';
-                $vals   .= ', ?, ?';
-                $params[] = $paymentId;
-                $params[] = $paymentInstallments;
-            }
-            $db->prepare("INSERT INTO inscricoes ($cols) VALUES ($vals)")->execute($params);
+            ]);
+            $inscricaoId = (int)$db->lastInsertId();
 
-            if ($statusPagamento === 'confirmado') {
-                redirect('/curso.php?slug=' . $slug . '&inscrito=1', 'Inscrição e pagamento confirmados com sucesso!', 'success');
+            // Redirecionar para checkout InfinitePay (cursos pagos por cartão)
+            if ($formData['forma_pagamento'] === 'cartao' && $ipayDisponivel && (float)$curso['valor'] > 0) {
+                $orderNsu = 'INS-' . $inscricaoId;
+                $db->prepare('UPDATE inscricoes SET payment_id = ? WHERE id = ?')->execute([$orderNsu, $inscricaoId]);
+
+                $resultado = $ipay->criarLink([
+                    'valor'        => (float)$curso['valor'],
+                    'nome'         => $formData['nome_completo'],
+                    'email'        => $formData['email'],
+                    'telefone'     => $formData['telefone'],
+                    'curso_nome'   => $curso['nome'],
+                    'order_nsu'    => $orderNsu,
+                    'redirect_url' => BASE_URL . BASE_PATH . '/curso.php?slug=' . urlencode($slug) . '&inscrito=1',
+                    'webhook_url'  => BASE_URL . BASE_PATH . '/api/infinitepay-webhook.php',
+                ]);
+
+                if ($resultado['sucesso']) {
+                    ob_end_clean();
+                    header('Location: ' . $resultado['url']);
+                    exit;
+                }
+
+                // Falha ao gerar link — desfaz inscrição e mostra erro
+                $db->prepare('DELETE FROM inscricoes WHERE id = ?')->execute([$inscricaoId]);
+                $erros[] = $resultado['erro'];
             } else {
-                redirect('/curso.php?slug=' . $slug . '&inscrito=1', 'Inscrição realizada com sucesso! Aguarde a confirmação do pagamento.', 'success');
+                if ($statusPagamento === 'confirmado') {
+                    redirect('/curso.php?slug=' . $slug . '&inscrito=1', 'Inscrição e pagamento confirmados com sucesso!', 'success');
+                } else {
+                    redirect('/curso.php?slug=' . $slug . '&inscrito=1', 'Inscrição realizada com sucesso! Aguarde a confirmação do pagamento.', 'success');
+                }
             }
         }
     }
@@ -314,13 +282,9 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <?php endif; ?>
 
-          <form id="form-inscricao" method="POST" action="#inscricao" novalidate<?= $ipayDisponivel ? ' data-ip="form"' : '' ?>>
+          <form id="form-inscricao" method="POST" action="#inscricao" novalidate>
             <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
             <input type="hidden" name="forma_pagamento" id="forma_pagamento" value="<?= h($formData['forma_pagamento'] ?? '') ?>">
-            <?php if ($ipayDisponivel): ?>
-            <input type="hidden" id="ip-token" name="infinitepay_custom[token]" value="">
-            <input type="hidden" id="ip-uuid" name="infinitepay_custom[uuid]" value="">
-            <?php endif; ?>
 
             <div class="row g-3">
               <div class="col-md-6">
@@ -405,77 +369,22 @@ require_once __DIR__ . '/includes/header.php';
               <?php if (!$emBreve): ?>
               <div class="pagamento-instrucoes <?= $visivel ? 'visivel' : '' ?>" id="instrucoes-<?= h($formaKey) ?>">
                 <?php if ($isIpay): ?>
-                <!-- Formulário de cartão InfinitePay -->
+                <!-- Checkout InfinitePay (link redirect) -->
                 <?php if ((float)$curso['valor'] <= 0): ?>
                 <div class="alert alert-success" style="border-radius:8px;font-size:.9rem;margin-top:8px;">
                   <i class="bi bi-gift-fill me-2"></i> Este curso é gratuito. Confirme sua inscrição.
                 </div>
                 <?php else: ?>
-                <div id="cartao-form" style="background:#f8f9fa;border-radius:10px;padding:20px;margin-top:8px;">
-                  <div style="font-weight:700;color:var(--primary);margin-bottom:14px;font-size:.95rem;">
-                    <i class="bi bi-lock-fill me-1"></i> Dados do Cartão de Crédito
+                <div style="background:#f8f9fa;border-radius:10px;padding:18px;margin-top:8px;">
+                  <div style="font-weight:700;color:var(--primary);margin-bottom:10px;font-size:.95rem;">
+                    <i class="bi bi-lock-fill me-1"></i> Pagamento via InfinitePay
                   </div>
-                  <?php if ($ipay->isConfigured() && getConfig('infinitepay_ambiente') === 'sandbox'): ?>
-                  <div class="alert alert-warning mb-3" style="font-size:.82rem;border-radius:8px;">
-                    <i class="bi bi-exclamation-triangle me-1"></i> Modo de testes ativo. Nenhuma cobrança real será efetuada.
-                  </div>
-                  <?php endif; ?>
-                  <input type="hidden" data-ip="method" value="credit_card">
-                  <div class="row g-2">
-                    <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Nome no Cartão <span style="color:var(--accent)">*</span></label>
-                      <input type="text" class="form-control" id="cartao_nome" data-ip="card-holder-name"
-                             maxlength="50" placeholder="NOME SOBRENOME" autocomplete="cc-name"
-                             style="text-transform:uppercase;">
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Número do Cartão <span style="color:var(--accent)">*</span></label>
-                      <input type="tel" class="form-control" id="cartao_numero" data-ip="card-number"
-                             maxlength="19" placeholder="0000 0000 0000 0000" autocomplete="cc-number"
-                             style="letter-spacing:.08em;font-size:1rem;">
-                    </div>
-                    <div class="col-5">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Mês <span style="color:var(--accent)">*</span></label>
-                      <input type="tel" class="form-control" id="cartao_mes" data-ip="card-expiration-month"
-                             maxlength="2" placeholder="MM" autocomplete="cc-exp-month">
-                    </div>
-                    <div class="col-4">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Ano <span style="color:var(--accent)">*</span></label>
-                      <input type="tel" class="form-control" id="cartao_ano" data-ip="card-expiration-year"
-                             maxlength="2" placeholder="AA" autocomplete="cc-exp-year">
-                    </div>
-                    <div class="col-3">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">CVV <span style="color:var(--accent)">*</span></label>
-                      <input type="tel" class="form-control" id="cartao_cvv" data-ip="card-cvv"
-                             name="infinitepay_custom[cvv]" maxlength="4" placeholder="123" autocomplete="cc-csc">
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">CPF do titular do cartão <span style="color:var(--accent)">*</span></label>
-                      <input type="tel" class="form-control" id="cartao_cpf" data-ip="card-holder-document"
-                             name="infinitepay_custom[doc_number]" maxlength="14" placeholder="000.000.000-00"
-                             value="<?= h(isset($formData['cpf']) ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $formData['cpf']) : '') ?>">
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Parcelamento <span style="color:var(--accent)">*</span></label>
-                      <select class="form-select" id="parcelas_select" name="infinitepay_custom[installments]">
-                        <?php foreach ($parcelasDisponiveis as $parc): ?>
-                        <option value="<?= $parc['n'] ?>">
-                          <?php if ($parc['n'] === 1): ?>
-                            R$ <?= number_format($parc['por_parcela'], 2, ',', '.') ?> à vista (sem juros)
-                          <?php else: ?>
-                            <?= $parc['n'] ?>x de R$ <?= number_format($parc['por_parcela'], 2, ',', '.') ?> <?= $parc['tem_juros'] ? 'com juros (total R$ ' . number_format($parc['total'], 2, ',', '.') . ')' : 'sem juros' ?>
-                          <?php endif; ?>
-                        </option>
-                        <?php endforeach; ?>
-                      </select>
-                    </div>
-                  </div>
-                  <div id="cartao-erro" class="alert alert-danger mt-3 d-none" style="border-radius:8px;font-size:.87rem;"></div>
-                  <div id="cartao-loading" class="mt-3 d-none text-center" style="color:var(--primary);font-size:.9rem;">
-                    <div class="spinner-border spinner-border-sm me-2"></div> Processando pagamento...
-                  </div>
-                  <div class="mt-3" style="font-size:.75rem;color:#999;">
-                    <i class="bi bi-shield-lock-fill me-1"></i> Dados criptografados. Nenhum número de cartão é armazenado em nossos servidores.
+                  <p style="font-size:.88rem;color:#555;margin-bottom:8px;">
+                    Ao confirmar a inscrição você será redirecionado para a página segura de pagamento da InfinitePay,
+                    onde poderá pagar com <strong>cartão de crédito</strong> (parcelado em até 12x) ou <strong>Pix</strong>.
+                  </p>
+                  <div style="font-size:.75rem;color:#999;">
+                    <i class="bi bi-shield-lock-fill me-1"></i> Seus dados de cartão são inseridos diretamente no ambiente seguro da InfinitePay.
                   </div>
                 </div>
                 <?php endif; ?>
@@ -588,130 +497,5 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<?php if ($ipayDisponivel && (float)$curso['valor'] > 0): ?>
-<script>
-(function() {
-  var IPAY_ACCESS_TOKEN = <?= json_encode($ipayTokenizacaoToken) ?>;
-  var ipayInstance = null;
-  var ipayReady    = false;
-  var submitPending = false;
-
-  function initIpay() {
-    if (!window.IPay || ipayReady) return;
-    ipayInstance = new IPay({ access_token: IPAY_ACCESS_TOKEN });
-    ipayInstance.listeners = {
-      'result:success': function() {
-        // ipay.js injects input[name="ip[token]"] and input[name="ip[session_id]"] into the form
-        var tokenField = document.querySelector("input[name='ip[token]']");
-        var sessField  = document.querySelector("input[name='ip[session_id]']");
-        if (tokenField) document.getElementById('ip-token').value = tokenField.value;
-        if (sessField)  document.getElementById('ip-uuid').value  = sessField.value;
-        if (submitPending && document.getElementById('ip-token').value) {
-          submitPending = false;
-          document.getElementById('form-inscricao').submit();
-        }
-      },
-      'result:error': function() {
-        submitPending = false;
-        mostrarErroCartao('Falha ao validar os dados do cartão. Verifique os dados e tente novamente.');
-        ocultarLoading();
-      }
-    };
-    ipayReady = true;
-
-    // Auto-fill name and CPF from registration fields
-    var nomeReg = document.getElementById('nome_completo');
-    var nomeCard = document.getElementById('cartao_nome');
-    if (nomeReg && nomeCard && !nomeCard.value) {
-      nomeCard.value = nomeReg.value.toUpperCase();
-    }
-    var cpfReg  = document.getElementById('cpf');
-    var cpfCard = document.getElementById('cartao_cpf');
-    if (cpfReg && cpfCard && !cpfCard.value) {
-      cpfCard.value = cpfReg.value;
-    }
-  }
-
-  function mostrarErroCartao(msg) {
-    var el = document.getElementById('cartao-erro');
-    if (el) { el.textContent = msg; el.classList.remove('d-none'); }
-  }
-
-  function ocultarErroCartao() {
-    var el = document.getElementById('cartao-erro');
-    if (el) el.classList.add('d-none');
-  }
-
-  function mostrarLoading() {
-    var el = document.getElementById('cartao-loading');
-    if (el) el.classList.remove('d-none');
-    var btn = document.querySelector('.btn-submit');
-    if (btn) btn.disabled = true;
-  }
-
-  function ocultarLoading() {
-    var el = document.getElementById('cartao-loading');
-    if (el) el.classList.add('d-none');
-    var btn = document.querySelector('.btn-submit');
-    if (btn) btn.disabled = false;
-  }
-
-  function validarCamposCartao() {
-    var nome = (document.getElementById('cartao_nome')?.value || '').trim();
-    var num  = (document.getElementById('cartao_numero')?.value || '').replace(/\D/g,'');
-    var mes  = (document.getElementById('cartao_mes')?.value || '').replace(/\D/g,'');
-    var ano  = (document.getElementById('cartao_ano')?.value || '').replace(/\D/g,'');
-    var cvv  = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
-    var cpf  = (document.getElementById('cartao_cpf')?.value || '').replace(/\D/g,'');
-    if (!nome)                 { mostrarErroCartao('Informe o nome impresso no cartão.'); return false; }
-    if (num.length < 13)       { mostrarErroCartao('Número do cartão inválido.'); return false; }
-    if (!mes || +mes < 1 || +mes > 12) { mostrarErroCartao('Mês de validade inválido (01–12).'); return false; }
-    if (!ano || ano.length < 2){ mostrarErroCartao('Ano de validade inválido.'); return false; }
-    if (cvv.length < 3)        { mostrarErroCartao('Código CVV inválido.'); return false; }
-    if (cpf.length !== 11)     { mostrarErroCartao('CPF do titular inválido.'); return false; }
-    return true;
-  }
-
-  document.getElementById('form-inscricao').addEventListener('submit', function(e) {
-    if (document.getElementById('forma_pagamento').value !== 'cartao') return;
-    e.preventDefault();
-    ocultarErroCartao();
-    if (!validarCamposCartao()) return;
-
-    mostrarLoading();
-
-    if (!ipayReady) {
-      mostrarErroCartao('Gateway de pagamento não inicializado. Recarregue a página.');
-      ocultarLoading();
-      return;
-    }
-
-    submitPending = true;
-    ipayInstance.generate(document.getElementById('form-inscricao'));
-  });
-
-  // Mask: card number groups of 4
-  document.getElementById('cartao_numero')?.addEventListener('input', function() {
-    var v = this.value.replace(/\D/g,'').substring(0,16);
-    this.value = v.replace(/(.{4})/g,'$1 ').trim();
-  });
-
-  // Mask: CPF card
-  document.getElementById('cartao_cpf')?.addEventListener('input', function() {
-    var v = this.value.replace(/\D/g,'').substring(0,11);
-    v = v.replace(/^(\d{3})(\d)/,'$1.$2');
-    v = v.replace(/^(\d{3}\.\d{3})(\d)/,'$1.$2');
-    v = v.replace(/^(\d{3}\.\d{3}\.\d{3})(\d)/,'$1-$2');
-    this.value = v;
-  });
-
-  // Load ipay.js
-  var s = document.createElement('script');
-  s.src = <?= json_encode($ipay->getIpayJsUrl()) ?>;
-  s.onload = initIpay;
-  document.head.appendChild(s);
-})();
-</script>
-<?php endif; ?>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

@@ -59,17 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setConfig('deposito_conta', sanitize($_POST['deposito_conta'] ?? ''));
         setConfig('deposito_titular', sanitize($_POST['deposito_titular'] ?? ''));
         // InfinitePay
-        setConfig('infinitepay_client_id', sanitize($_POST['infinitepay_client_id'] ?? ''));
-        if (!empty($_POST['infinitepay_client_secret'])) {
-            setConfig('infinitepay_client_secret', sanitize($_POST['infinitepay_client_secret'] ?? ''));
-        }
+        setConfig('infinitepay_handle', sanitize($_POST['infinitepay_handle'] ?? ''));
         if (!empty($_POST['infinitepay_webhook_secret'])) {
             setConfig('infinitepay_webhook_secret', sanitize($_POST['infinitepay_webhook_secret'] ?? ''));
         }
-        $ambiente = in_array($_POST['infinitepay_ambiente'] ?? '', ['producao', 'sandbox']) ? $_POST['infinitepay_ambiente'] : 'producao';
-        setConfig('infinitepay_ambiente', $ambiente);
-        $maxParc = max(1, min(12, (int)($_POST['infinitepay_max_parcelas'] ?? 12)));
-        setConfig('infinitepay_max_parcelas', (string)$maxParc);
         redirect('/admin/configuracoes.php?aba=pagamentos', 'Opções de pagamento atualizadas.', 'success');
     }
 
@@ -333,52 +326,27 @@ function cfg(string $key, array $c, string $d = ''): string {
         </div>
         <div class="admin-card-body">
           <?php
-          $ipOk = !empty($configs['infinitepay_client_id'] ?? '') && !empty($configs['infinitepay_client_secret'] ?? '');
+          $ipOk = !empty($configs['infinitepay_handle'] ?? '');
           if ($ipOk): ?>
           <div class="alert alert-success mb-3" style="border-radius:8px;font-size:.85rem;">
             <i class="bi bi-check-circle-fill me-1"></i>
-            Credenciais configuradas. A opção de cartão está integrada com a InfinitePay.
+            InfiniteTag configurada. Pagamento por cartão/Pix via checkout InfinitePay ativo.
           </div>
           <?php else: ?>
           <div class="alert alert-warning mb-3" style="border-radius:8px;font-size:.85rem;">
             <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            Preencha o <strong>Client ID</strong> e <strong>Client Secret</strong> da InfinitePay para ativar o pagamento por cartão.
-            Obtenha suas credenciais em <a href="https://money.infinitepay.io/settings/credentials" target="_blank">money.infinitepay.io/settings/credentials</a>.
+            Preencha a sua <strong>InfiniteTag</strong> para ativar o checkout de pagamento.
+            Encontre sua tag no canto superior esquerdo do aplicativo InfinitePay (sem o símbolo $).
           </div>
           <?php endif; ?>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="admin-form-group mb-0">
-                <label>Ambiente</label>
-                <select class="form-select" name="infinitepay_ambiente">
-                  <option value="producao" <?= ($configs['infinitepay_ambiente'] ?? 'producao') === 'producao' ? 'selected' : '' ?>>Produção</option>
-                  <option value="sandbox" <?= ($configs['infinitepay_ambiente'] ?? 'producao') === 'sandbox' ? 'selected' : '' ?>>Sandbox (Testes)</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="admin-form-group mb-0">
-                <label>Máximo de Parcelas</label>
-                <select class="form-select" name="infinitepay_max_parcelas">
-                  <?php for ($p = 1; $p <= 12; $p++): ?>
-                  <option value="<?= $p ?>" <?= (int)($configs['infinitepay_max_parcelas'] ?? 12) === $p ? 'selected' : '' ?>><?= $p ?>x</option>
-                  <?php endfor; ?>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="admin-form-group mb-0">
-                <label>Client ID</label>
-                <input type="text" class="form-control" name="infinitepay_client_id"
-                       value="<?= cfg('infinitepay_client_id', $configs) ?>" maxlength="200"
-                       placeholder="Ex: abc123">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="admin-form-group mb-0">
-                <label>Client Secret <small class="text-muted">(deixe em branco para manter)</small></label>
-                <input type="password" class="form-control" name="infinitepay_client_secret"
-                       placeholder="<?= !empty($configs['infinitepay_client_secret'] ?? '') ? '••••••••••••' : 'Sua chave secreta' ?>">
+                <label>InfiniteTag (handle)</label>
+                <input type="text" class="form-control" name="infinitepay_handle"
+                       value="<?= cfg('infinitepay_handle', $configs) ?>" maxlength="100"
+                       placeholder="Ex: minhaempresa">
+                <div class="form-text">Seu nome de usuário no app InfinitePay, sem o $ inicial.</div>
               </div>
             </div>
             <div class="col-md-6">
@@ -386,7 +354,7 @@ function cfg(string $key, array $c, string $d = ''): string {
                 <label>Webhook Secret <small class="text-muted">(opcional — deixe em branco para manter)</small></label>
                 <input type="password" class="form-control" name="infinitepay_webhook_secret"
                        placeholder="<?= !empty($configs['infinitepay_webhook_secret'] ?? '') ? '••••••••••••' : 'Chave de validação do webhook' ?>">
-                <div class="form-text">URL do webhook: <code><?= h(BASE_PATH) ?>/api/infinitepay-webhook.php</code></div>
+                <div class="form-text">URL do webhook: <code><?= h(BASE_URL . BASE_PATH) ?>/api/infinitepay-webhook.php</code></div>
               </div>
             </div>
           </div>
