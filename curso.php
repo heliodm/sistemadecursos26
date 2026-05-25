@@ -155,7 +155,7 @@ if (getConfig('transferencia_ativo') === '1') $pagamentos['transferencia'] = ['l
 if (getConfig('deposito_ativo') === '1') $pagamentos['deposito'] = ['label' => 'Depósito', 'icon' => 'bi-cash-stack', 'instrucoes' => getConfig('deposito_instrucoes'), 'dados' => implode(' | ', array_filter([getConfig('deposito_banco'), 'Ag: ' . getConfig('deposito_agencia'), 'CC: ' . getConfig('deposito_conta'), getConfig('deposito_titular')]))];
 if (getConfig('cartao_ativo') === '1') {
     if ($ipayDisponivel) {
-        $pagamentos['cartao'] = ['label' => 'Cartão de Crédito', 'icon' => 'bi-credit-card', 'instrucoes' => '', 'ipay' => true];
+        $pagamentos['cartao'] = ['label' => 'Cartão de Crédito/Pix', 'icon' => 'bi-credit-card', 'instrucoes' => '', 'ipay' => true];
     } else {
         $pagamentos['cartao'] = ['label' => 'Cartão', 'icon' => 'bi-credit-card', 'instrucoes' => getConfig('cartao_instrucoes'), 'em_breve' => true];
     }
