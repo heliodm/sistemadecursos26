@@ -30,6 +30,30 @@ if ($ipayDisponivel) {
     InfinitePay::migrarColunas();
 }
 
+// Retorno do checkout InfinitePay: verificar e confirmar pagamento
+$pagamentoConfirmado = false;
+if (isset($_GET['inscrito'], $_GET['order_nsu'])) {
+    $retOrderNsu  = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['order_nsu'] ?? '');
+    $retInvoice   = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['invoice_slug'] ?? '');
+    $retTxNsu     = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['transaction_nsu'] ?? '');
+    if ($retOrderNsu) {
+        $stmtRet = $db->prepare("SELECT id, status_pagamento FROM inscricoes WHERE payment_id = ? LIMIT 1");
+        $stmtRet->execute([$retOrderNsu]);
+        $inscRet = $stmtRet->fetch();
+        if ($inscRet) {
+            if ($inscRet['status_pagamento'] === 'confirmado') {
+                $pagamentoConfirmado = true;
+            } elseif ($inscRet['status_pagamento'] === 'pendente' && $ipay->isConfigured()) {
+                if ($ipay->verificarPagamento($retOrderNsu, $retInvoice, $retTxNsu)) {
+                    $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE id = ?")
+                       ->execute([$inscRet['id']]);
+                    $pagamentoConfirmado = true;
+                }
+            }
+        }
+    }
+}
+
 // Processar inscrição
 $erros    = [];
 $formData = [];
@@ -107,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'telefone'     => $formData['telefone'],
                     'curso_nome'   => $curso['nome'],
                     'order_nsu'    => $orderNsu,
-                    'redirect_url' => BASE_URL . BASE_PATH . '/curso.php?slug=' . urlencode($slug) . '&inscrito=1',
+                    'redirect_url' => BASE_URL . BASE_PATH . '/curso.php?slug=' . urlencode($slug) . '&inscrito=1&order_nsu=' . urlencode($orderNsu),
                     'webhook_url'  => BASE_URL . BASE_PATH . '/api/infinitepay-webhook.php',
                 ]);
 
@@ -208,13 +232,23 @@ require_once __DIR__ . '/includes/header.php';
 <!-- Sucesso banner -->
 <?php if ($inscrito): ?>
 <div class="container mt-4">
+  <?php if ($pagamentoConfirmado): ?>
   <div class="alert alert-success d-flex align-items-center gap-3" style="border-radius:12px;border:none;background:linear-gradient(135deg,#d4edda,#c3e6cb);">
     <i class="bi bi-check-circle-fill" style="font-size:2rem;color:#28a745;"></i>
     <div>
-      <strong>Inscrição realizada com sucesso!</strong><br>
-      <span style="font-size:.9rem;">Sua inscrição foi recebida. Realize o pagamento conforme as instruções e aguarde a confirmação.</span>
+      <strong>Pagamento confirmado!</strong><br>
+      <span style="font-size:.9rem;">Sua inscrição e pagamento foram confirmados com sucesso.</span>
     </div>
   </div>
+  <?php else: ?>
+  <div class="alert alert-info d-flex align-items-center gap-3" style="border-radius:12px;border:none;background:linear-gradient(135deg,#d1ecf1,#bee5eb);">
+    <i class="bi bi-hourglass-split" style="font-size:2rem;color:#0c5460;"></i>
+    <div>
+      <strong>Inscrição recebida!</strong><br>
+      <span style="font-size:.9rem;">Realize o pagamento conforme as instruções. Você receberá a confirmação assim que o pagamento for processado.</span>
+    </div>
+  </div>
+  <?php endif; ?>
 </div>
 <?php endif; ?>
 

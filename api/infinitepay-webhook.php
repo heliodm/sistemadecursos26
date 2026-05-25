@@ -37,9 +37,8 @@ $txNsu     = $payload['transaction_nsu'] ?? '';
 if ($orderNsu && $paid) {
     try {
         $db = getDB();
-        // payment_id matches either the transaction UUID or the order reference stored at inscription time
         $stmt = $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE payment_id = ? AND status_pagamento = 'pendente'");
-        $stmt->execute([$txNsu ?: $orderNsu]);
+        $stmt->execute([$orderNsu]);
     } catch (\Throwable $e) {
         http_response_code(400); // 400 triggers InfinitePay retry
         echo json_encode(['success' => false, 'message' => 'db_error']);
