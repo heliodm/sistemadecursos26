@@ -1,0 +1,141 @@
+/* ── Custom Form Builder – Frontend ─────────────────────── */
+
+.cfb-form-wrap {
+    margin: 20px 0;
+}
+
+.cfb-fields-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cfb-field-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cfb-width-full  { flex: 0 0 100%; }
+.cfb-width-half  { flex: 0 0 calc(50% - 8px); }
+.cfb-width-third { flex: 0 0 calc(33.333% - 11px); }
+
+@media (max-width: 600px) {
+    .cfb-width-half,
+    .cfb-width-third { flex: 0 0 100%; }
+}
+
+.cfb-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.cfb-required {
+    color: #dc3232;
+    margin-left: 2px;
+}
+
+.cfb-input,
+.cfb-textarea,
+.cfb-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 15px;
+    line-height: 1.5;
+    transition: border-color .2s, box-shadow .2s;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.cfb-input:focus,
+.cfb-textarea:focus,
+.cfb-select:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 2px rgba(0,115,170,.2);
+}
+
+.cfb-textarea { resize: vertical; min-height: 100px; }
+
+.cfb-has-error .cfb-input,
+.cfb-has-error .cfb-textarea,
+.cfb-has-error .cfb-select {
+    border-color: #dc3232;
+}
+
+.cfb-field-error {
+    color: #dc3232;
+    font-size: 12px;
+    min-height: 16px;
+}
+
+.cfb-radio-group,
+.cfb-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cfb-radio-label,
+.cfb-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cfb-submit-wrap {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cfb-submit-btn {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .2s;
+}
+
+.cfb-submit-btn:hover  { background: #005d8c; }
+.cfb-submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.cfb-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ccc;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: cfb-spin .7s linear infinite;
+}
+
+@keyframes cfb-spin { to { transform: rotate(360deg); } }
+
+.cfb-form-message {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 4px;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.cfb-form-message.cfb-success {
+    background: #f0f9f4;
+    border: 1px solid #46b450;
+    color: #2a6e32;
+}
+
+.cfb-form-message.cfb-error {
+    background: #fef7f7;
+    border: 1px solid #dc3232;
+    color: #8b1f1f;
+}

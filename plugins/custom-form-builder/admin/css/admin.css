@@ -1,0 +1,172 @@
+/* ── Custom Form Builder – Admin ────────────────────────── */
+
+.cfb-wrap h1 { margin-bottom: 12px; }
+
+/* ── Shortcode bar ───────────────────────────────────────── */
+.cfb-shortcode-bar {
+    background: #f0f6fc;
+    border: 1px solid #b8d4e8;
+    border-radius: 4px;
+    padding: 10px 16px;
+    margin: 12px 0 20px;
+    font-size: 14px;
+}
+.cfb-shortcode {
+    background: #e2ecf5;
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: all;
+    transition: background .2s;
+}
+.cfb-shortcode:hover { background: #c9dff0; }
+
+/* ── Layout ─────────────────────────────────────────────── */
+.cfb-edit-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 16px;
+}
+.cfb-col-main { flex: 1 1 60%; min-width: 0; }
+.cfb-col-side  { flex: 0 0 340px; }
+
+@media (max-width: 900px) {
+    .cfb-edit-layout { flex-direction: column; }
+    .cfb-col-side { flex: 1 1 auto; width: 100%; }
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.cfb-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+.cfb-card h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: #1d2327;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+.cfb-notice-card {
+    text-align: center;
+    color: #777;
+    padding: 30px 20px;
+}
+.cfb-notice-card .dashicons { font-size: 32px; color: #aaa; }
+
+/* ── Forms list ─────────────────────────────────────────── */
+.cfb-table .cfb-actions a { white-space: nowrap; }
+.cfb-delete { color: #dc3232 !important; }
+.cfb-delete:hover { color: #9b0000 !important; }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.cfb-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #777;
+}
+.cfb-empty-state .dashicons { font-size: 48px; color: #ccc; display: block; margin: 0 auto 12px; }
+
+/* ── Fields list ─────────────────────────────────────────── */
+#cfb-fields-list {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    min-height: 40px;
+}
+.cfb-field-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.cfb-drag-handle {
+    cursor: grab;
+    color: #aaa;
+    flex-shrink: 0;
+}
+.cfb-drag-handle:active { cursor: grabbing; }
+.cfb-field-label { font-weight: 600; flex: 1; }
+.cfb-field-type-badge {
+    background: #e2ecf5;
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-size: 11px;
+    color: #0073aa;
+}
+.cfb-required-badge {
+    color: #dc3232;
+    font-weight: 700;
+    font-size: 14px;
+}
+.cfb-field-actions { display: flex; gap: 8px; font-size: 12px; }
+.cfb-field-actions a { text-decoration: none; }
+
+/* ── Modal ──────────────────────────────────────────────── */
+.cfb-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cfb-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 28px 32px;
+    width: 90%;
+    max-width: 580px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,.25);
+}
+.cfb-modal-content h3 {
+    margin: 0 0 16px;
+    font-size: 17px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+.cfb-modal-content .form-table th { width: 140px; }
+.cfb-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+/* ── Entries ─────────────────────────────────────────────── */
+.cfb-entry-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.cfb-entry-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #555;
+    border-bottom: 1px solid #eee;
+}
+.cfb-entry-meta a { margin-left: auto; color: #dc3232; }
+.cfb-entry-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cfb-entry-table th,
+.cfb-entry-table td { padding: 8px 16px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.cfb-entry-table th { width: 30%; background: #fafafa; color: #555; text-align: left; }
