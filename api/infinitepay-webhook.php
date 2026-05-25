@@ -41,11 +41,11 @@ if ($orderNsu && $paid) {
         $stmt = $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE payment_id = ? AND status_pagamento = 'pendente'");
         $stmt->execute([$txNsu ?: $orderNsu]);
     } catch (\Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'db_error']);
+        http_response_code(400); // 400 triggers InfinitePay retry
+        echo json_encode(['success' => false, 'message' => 'db_error']);
         exit;
     }
 }
 
 http_response_code(200);
-echo json_encode(['received' => true]);
+echo json_encode(['success' => true, 'message' => null]);

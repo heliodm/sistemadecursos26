@@ -314,7 +314,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <?php endif; ?>
 
-          <form id="form-inscricao" method="POST" action="#inscricao" novalidate>
+          <form id="form-inscricao" method="POST" action="#inscricao" novalidate<?= $ipayDisponivel ? ' data-ip="form"' : '' ?>>
             <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
             <input type="hidden" name="forma_pagamento" id="forma_pagamento" value="<?= h($formData['forma_pagamento'] ?? '') ?>">
             <?php if ($ipayDisponivel): ?>
@@ -422,6 +422,12 @@ require_once __DIR__ . '/includes/header.php';
                   <?php endif; ?>
                   <input type="hidden" data-ip="method" value="credit_card">
                   <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Nome no Cartão <span style="color:var(--accent)">*</span></label>
+                      <input type="text" class="form-control" id="cartao_nome" data-ip="card-holder-name"
+                             maxlength="50" placeholder="NOME SOBRENOME" autocomplete="cc-name"
+                             style="text-transform:uppercase;">
+                    </div>
                     <div class="col-12">
                       <label class="form-label" style="font-size:.83rem;font-weight:600;color:#444;">Número do Cartão <span style="color:var(--accent)">*</span></label>
                       <input type="tel" class="form-control" id="cartao_numero" data-ip="card-number"
@@ -613,8 +619,13 @@ require_once __DIR__ . '/includes/header.php';
     };
     ipayReady = true;
 
-    // Auto-fill CPF from registration form
-    var cpfReg = document.getElementById('cpf');
+    // Auto-fill name and CPF from registration fields
+    var nomeReg = document.getElementById('nome_completo');
+    var nomeCard = document.getElementById('cartao_nome');
+    if (nomeReg && nomeCard && !nomeCard.value) {
+      nomeCard.value = nomeReg.value.toUpperCase();
+    }
+    var cpfReg  = document.getElementById('cpf');
     var cpfCard = document.getElementById('cartao_cpf');
     if (cpfReg && cpfCard && !cpfCard.value) {
       cpfCard.value = cpfReg.value;
@@ -646,11 +657,13 @@ require_once __DIR__ . '/includes/header.php';
   }
 
   function validarCamposCartao() {
-    var num = (document.getElementById('cartao_numero')?.value || '').replace(/\D/g,'');
-    var mes = (document.getElementById('cartao_mes')?.value || '').replace(/\D/g,'');
-    var ano = (document.getElementById('cartao_ano')?.value || '').replace(/\D/g,'');
-    var cvv = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
-    var cpf = (document.getElementById('cartao_cpf')?.value || '').replace(/\D/g,'');
+    var nome = (document.getElementById('cartao_nome')?.value || '').trim();
+    var num  = (document.getElementById('cartao_numero')?.value || '').replace(/\D/g,'');
+    var mes  = (document.getElementById('cartao_mes')?.value || '').replace(/\D/g,'');
+    var ano  = (document.getElementById('cartao_ano')?.value || '').replace(/\D/g,'');
+    var cvv  = (document.getElementById('cartao_cvv')?.value || '').replace(/\D/g,'');
+    var cpf  = (document.getElementById('cartao_cpf')?.value || '').replace(/\D/g,'');
+    if (!nome)                 { mostrarErroCartao('Informe o nome impresso no cartão.'); return false; }
     if (num.length < 13)       { mostrarErroCartao('Número do cartão inválido.'); return false; }
     if (!mes || +mes < 1 || +mes > 12) { mostrarErroCartao('Mês de validade inválido (01–12).'); return false; }
     if (!ano || ano.length < 2){ mostrarErroCartao('Ano de validade inválido.'); return false; }
