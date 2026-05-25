@@ -30,27 +30,16 @@ if ($ipayDisponivel) {
     InfinitePay::migrarColunas();
 }
 
-// Retorno do checkout InfinitePay: verificar e confirmar pagamento
+// Define $pagamentoConfirmado para o banner: consulta DB pelo order_nsu passado na URL
+// (infinitepay-return.php já tratou a verificação/atualização antes de redirecionar aqui)
 $pagamentoConfirmado = false;
 if (isset($_GET['inscrito'], $_GET['order_nsu'])) {
-    $retOrderNsu  = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['order_nsu'] ?? '');
-    $retInvoice   = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['invoice_slug'] ?? '');
-    $retTxNsu     = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['transaction_nsu'] ?? '');
-    if ($retOrderNsu) {
-        $stmtRet = $db->prepare("SELECT id, status_pagamento FROM inscricoes WHERE payment_id = ? LIMIT 1");
-        $stmtRet->execute([$retOrderNsu]);
-        $inscRet = $stmtRet->fetch();
-        if ($inscRet) {
-            if ($inscRet['status_pagamento'] === 'confirmado') {
-                $pagamentoConfirmado = true;
-            } elseif ($inscRet['status_pagamento'] === 'pendente' && $ipay->isConfigured()) {
-                if ($ipay->verificarPagamento($retOrderNsu, $retInvoice, $retTxNsu)) {
-                    $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE id = ?")
-                       ->execute([$inscRet['id']]);
-                    $pagamentoConfirmado = true;
-                }
-            }
-        }
+    $retRef = preg_replace('/[^A-Za-z0-9_-]/', '', $_GET['order_nsu'] ?? '');
+    if ($retRef) {
+        $stmtRet = $db->prepare("SELECT status_pagamento FROM inscricoes WHERE payment_id = ? LIMIT 1");
+        $stmtRet->execute([$retRef]);
+        $inscRet = $stmtRet->fetchColumn();
+        $pagamentoConfirmado = ($inscRet === 'confirmado');
     }
 }
 
@@ -131,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'telefone'     => $formData['telefone'],
                     'curso_nome'   => $curso['nome'],
                     'order_nsu'    => $orderNsu,
-                    'redirect_url' => BASE_URL . BASE_PATH . '/curso.php?slug=' . urlencode($slug) . '&inscrito=1&order_nsu=' . urlencode($orderNsu),
+                    'redirect_url' => BASE_URL . BASE_PATH . '/api/infinitepay-return.php?ref=' . urlencode($orderNsu),
                     'webhook_url'  => BASE_URL . BASE_PATH . '/api/infinitepay-webhook.php',
                 ]);
 

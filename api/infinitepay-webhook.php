@@ -30,11 +30,14 @@ if (!is_array($payload)) {
     exit;
 }
 
-$orderNsu  = $payload['order_nsu'] ?? '';
-$paid      = !empty($payload['paid']);
-$txNsu     = $payload['transaction_nsu'] ?? '';
+$orderNsu = $payload['order_nsu'] ?? '';
 
-if ($orderNsu && $paid) {
+// InfinitePay sends paid_amount (not a boolean "paid") on successful checkout webhooks
+$pago = !empty($payload['paid'])
+     || (isset($payload['paid_amount']) && (int)$payload['paid_amount'] > 0)
+     || (isset($payload['status']) && strtolower($payload['status']) === 'paid');
+
+if ($orderNsu && $pago) {
     try {
         $db = getDB();
         $stmt = $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE payment_id = ? AND status_pagamento = 'pendente'");

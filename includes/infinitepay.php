@@ -70,14 +70,11 @@ class InfinitePay
         return ['sucesso' => false, 'erro' => 'Não foi possível gerar o link de pagamento. Tente novamente.'];
     }
 
-    public function verificarPagamento(string $orderNsu, string $invoiceSlug, string $txNsu): bool
+    public function verificarPagamento(string $orderNsu, string $invoiceSlug = '', string $txNsu = ''): bool
     {
-        $body = [
-            'handle'          => $this->handle,
-            'order_nsu'       => $orderNsu,
-            'invoice_slug'    => $invoiceSlug,
-            'transaction_nsu' => $txNsu,
-        ];
+        $body = ['handle' => $this->handle, 'order_nsu' => $orderNsu];
+        if ($invoiceSlug !== '') $body['invoice_slug']    = $invoiceSlug;
+        if ($txNsu      !== '') $body['transaction_nsu']  = $txNsu;
 
         $ch = curl_init(self::PAYMENT_CHECK_URL);
         curl_setopt_array($ch, [
@@ -92,7 +89,9 @@ class InfinitePay
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $httpCode === 200 && !empty($resp['paid']);
+        // Accept paid=true OR paid_amount > 0 (InfinitePay uses either depending on endpoint version)
+        return $httpCode === 200
+            && (!empty($resp['paid']) || (isset($resp['paid_amount']) && (int)$resp['paid_amount'] > 0));
     }
 
     public static function migrarColunas(): void
