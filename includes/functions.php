@@ -247,11 +247,11 @@ function formatarTipoCurso(string $tipo): string {
 // Formatar status pagamento
 function formatarStatusPagamento(string $status): array {
     $mapa = [
-        'pendente'   => ['label' => 'Pendente',   'class' => 'warning'],
-        'confirmado' => ['label' => 'Confirmado', 'class' => 'success'],
-        'cancelado'  => ['label' => 'Cancelado',  'class' => 'danger'],
+        'pendente'   => ['label' => 'Pendente',   'class' => 'pendente'],
+        'confirmado' => ['label' => 'Confirmado', 'class' => 'confirmado'],
+        'cancelado'  => ['label' => 'Cancelado',  'class' => 'cancelado'],
     ];
-    return $mapa[$status] ?? ['label' => $status, 'class' => 'secondary'];
+    return $mapa[$status] ?? ['label' => $status, 'class' => 'inativo'];
 }
 
 // Formatar forma de pagamento
