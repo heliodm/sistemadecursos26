@@ -48,8 +48,8 @@ function login(string $email, string $senha): array {
     $usuario = $stmt->fetch();
 
     if (!$usuario || !$usuario['ativo']) {
-        // Tempo constante para evitar timing attack
-        password_verify('dummy', '$2y$12$dummy_hash_to_prevent_timing_attacks');
+        // Hash válido para garantir que password_verify execute o custo bcrypt completo
+        password_verify('dummy', '$2y$12$R9h/cIPz0gi.URNNX3kh2OFFUI.JqZmhYd15vG2KJGqEAgVdAOoRq');
         return ['sucesso' => false, 'erro' => 'E-mail ou senha incorretos.'];
     }
 
