@@ -22,11 +22,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($email) || empty($senha)) {
             $erro = 'Preencha e-mail e senha.';
         } else {
-            $resultado = login($email, $senha);
-            if ($resultado['sucesso']) {
-                redirect('/admin/index.php');
+            // Rate limiting: máx 5 tentativas por 15 min por sessão
+            $now = time();
+            $attempts = array_values(array_filter(
+                $_SESSION['login_attempts'] ?? [],
+                fn($t) => $now - $t < 900
+            ));
+            if (count($attempts) >= 5) {
+                $wait = (int)ceil((900 - ($now - $attempts[0])) / 60);
+                $erro = "Muitas tentativas. Aguarde {$wait} minuto(s) para tentar novamente.";
             } else {
-                $erro = $resultado['erro'];
+                $resultado = login($email, $senha);
+                if ($resultado['sucesso']) {
+                    unset($_SESSION['login_attempts']);
+                    redirect('/admin/index.php');
+                } else {
+                    $attempts[] = $now;
+                    $_SESSION['login_attempts'] = $attempts;
+                    $erro = $resultado['erro'];
+                }
             }
         }
     }

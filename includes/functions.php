@@ -140,6 +140,46 @@ function uploadImagem(array $arquivo, string $pasta): array {
     return ['sucesso' => true, 'arquivo' => $pasta . '/' . $nomeArquivo];
 }
 
+// Upload de comprovante de pagamento (imagens ou PDF)
+function uploadComprovante(array $arquivo, string $pasta): array {
+    if ($arquivo['error'] !== UPLOAD_ERR_OK) {
+        $erros = [
+            UPLOAD_ERR_INI_SIZE   => 'Arquivo muito grande (limite do servidor).',
+            UPLOAD_ERR_FORM_SIZE  => 'Arquivo muito grande.',
+            UPLOAD_ERR_PARTIAL    => 'Upload incompleto.',
+            UPLOAD_ERR_NO_FILE    => 'Nenhum arquivo enviado.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Pasta temporária não encontrada.',
+            UPLOAD_ERR_CANT_WRITE => 'Erro ao salvar arquivo.',
+        ];
+        return ['sucesso' => false, 'erro' => $erros[$arquivo['error']] ?? 'Erro desconhecido no upload.'];
+    }
+    if ($arquivo['size'] > MAX_FILE_SIZE) {
+        return ['sucesso' => false, 'erro' => 'Arquivo excede 5MB.'];
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $tipoReal = $finfo->file($arquivo['tmp_name']);
+    $permitidos = [
+        'image/jpeg'      => 'jpg',
+        'image/png'       => 'png',
+        'image/webp'      => 'webp',
+        'image/gif'       => 'gif',
+        'application/pdf' => 'pdf',
+    ];
+    if (!isset($permitidos[$tipoReal])) {
+        return ['sucesso' => false, 'erro' => 'Tipo não permitido. Use JPG, PNG, WebP ou PDF.'];
+    }
+    $ext = $permitidos[$tipoReal];
+    $nomeArquivo = bin2hex(random_bytes(16)) . '.' . $ext;
+    $destino = UPLOAD_PATH . '/' . $pasta;
+    if (!is_dir($destino)) {
+        mkdir($destino, 0755, true);
+    }
+    if (!move_uploaded_file($arquivo['tmp_name'], $destino . '/' . $nomeArquivo)) {
+        return ['sucesso' => false, 'erro' => 'Erro ao mover arquivo.'];
+    }
+    return ['sucesso' => true, 'arquivo' => $pasta . '/' . $nomeArquivo];
+}
+
 // Deletar arquivo de upload
 function deletarUpload(string $caminho): void {
     if (empty($caminho)) return;

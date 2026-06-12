@@ -93,18 +93,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'Pagamento por cartão não está disponível no momento.';
         }
 
+        // Upload de comprovante (apenas para pagamentos manuais)
+        $comprovante = null;
+        $formasManual = ['pix', 'transferencia', 'deposito'];
+        if (empty($erros) && in_array($formData['forma_pagamento'], $formasManual, true)
+            && !empty($_FILES['comprovante']['name'])) {
+            $upComp = uploadComprovante($_FILES['comprovante'], 'comprovantes');
+            if ($upComp['sucesso']) {
+                $comprovante = $upComp['arquivo'];
+            } else {
+                $erros[] = 'Comprovante: ' . $upComp['erro'];
+            }
+        }
+
         // Salvar inscrição
         $statusPagamento = ((float)$curso['valor'] <= 0) ? 'confirmado' : 'pendente';
 
         if (empty($erros)) {
             $db->prepare(
-                'INSERT INTO inscricoes (curso_id, nome_completo, profissao, email, endereco, cpf, rg, formacao, telefone, forma_pagamento, status_pagamento)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO inscricoes (curso_id, nome_completo, profissao, email, endereco, cpf, rg, formacao, telefone, forma_pagamento, status_pagamento, comprovante)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $curso['id'], $formData['nome_completo'], $formData['profissao'],
                 $formData['email'], $formData['endereco'], $formData['cpf'],
                 $formData['rg'], $formData['formacao'], $formData['telefone'],
-                $formData['forma_pagamento'], $statusPagamento,
+                $formData['forma_pagamento'], $statusPagamento, $comprovante,
             ]);
             $inscricaoId = (int)$db->lastInsertId();
 
@@ -305,7 +318,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <?php endif; ?>
 
-          <form id="form-inscricao" method="POST" action="#inscricao" novalidate>
+          <form id="form-inscricao" method="POST" action="#inscricao" enctype="multipart/form-data" novalidate>
             <input type="hidden" name="csrf_token" value="<?= gerarCSRF() ?>">
             <input type="hidden" name="forma_pagamento" id="forma_pagamento" value="<?= h($formData['forma_pagamento'] ?? '') ?>">
 
@@ -424,6 +437,19 @@ require_once __DIR__ . '/includes/header.php';
               <?php endif; ?>
               <?php endforeach; ?>
             </div>
+
+            <?php if ((float)$curso['valor'] > 0): ?>
+            <div id="div-comprovante" style="display:none;margin:16px 0;padding:14px 16px;background:#f0f4ff;border-radius:10px;border:1.5px dashed var(--primary);">
+              <label for="comprovante" style="font-weight:700;font-size:.85rem;color:var(--primary);margin-bottom:6px;display:block;">
+                <i class="bi bi-paperclip me-1"></i>Comprovante de Pagamento
+                <span style="color:#888;font-weight:400;">(opcional)</span>
+              </label>
+              <input type="file" name="comprovante" id="comprovante" accept="image/*,.pdf" class="form-control form-control-sm">
+              <div style="font-size:.72rem;color:#888;margin-top:4px;">
+                <i class="bi bi-info-circle me-1"></i>JPG, PNG, WebP ou PDF · Máx 5MB. Você também pode enviar depois por e-mail.
+              </div>
+            </div>
+            <?php endif; ?>
 
             <button type="submit" class="btn-submit">
               <i class="bi bi-check2-circle me-2"></i>Confirmar Inscrição

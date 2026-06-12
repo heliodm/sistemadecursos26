@@ -49,10 +49,7 @@ INSERT IGNORE INTO `configuracoes` (`chave`, `valor`) VALUES
 ('deposito_instrucoes', 'Realize o depósito identificado e envie o comprovante para confirmar sua inscrição.'),
 ('cartao_ativo', '0'),
 ('cartao_instrucoes', 'Em breve disponível.'),
-('infinitepay_client_id', ''),
-('infinitepay_client_secret', ''),
-('infinitepay_ambiente', 'producao'),
-('infinitepay_max_parcelas', '12'),
+('infinitepay_handle', ''),
 ('infinitepay_webhook_secret', ''),
 ('cert_background', ''),
 ('cert_titulo', 'CERTIFICADO DE PARTICIPAÇÃO'),
@@ -127,6 +124,7 @@ CREATE TABLE IF NOT EXISTS `inscricoes` (
   `telefone` varchar(30) DEFAULT NULL,
   `forma_pagamento` enum('pix','transferencia','deposito','cartao') DEFAULT NULL,
   `status_pagamento` enum('pendente','confirmado','cancelado') NOT NULL DEFAULT 'pendente',
+  `payment_id` varchar(200) DEFAULT NULL,
   `comprovante` varchar(255) DEFAULT NULL,
   `observacoes` text DEFAULT NULL,
   `certificado_emitido` tinyint(1) NOT NULL DEFAULT 0,
@@ -136,6 +134,7 @@ CREATE TABLE IF NOT EXISTS `inscricoes` (
   KEY `curso_id` (`curso_id`),
   KEY `email` (`email`),
   KEY `cpf` (`cpf`),
+  KEY `payment_id` (`payment_id`),
   CONSTRAINT `fk_inscricao_curso` FOREIGN KEY (`curso_id`) REFERENCES `cursos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

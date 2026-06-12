@@ -70,6 +70,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       const instrucoes = document.getElementById('instrucoes-' + forma);
       if (instrucoes) instrucoes.classList.add('visivel');
+
+      // Mostrar/ocultar upload de comprovante
+      const comprovDiv = document.getElementById('div-comprovante');
+      if (comprovDiv) {
+        const manualFormas = ['pix', 'transferencia', 'deposito'];
+        const mostrar = manualFormas.includes(forma);
+        comprovDiv.style.display = mostrar ? 'block' : 'none';
+        if (!mostrar) {
+          const compInput = document.getElementById('comprovante');
+          if (compInput) compInput.value = '';
+        }
+      }
     });
   });
 

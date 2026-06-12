@@ -25,7 +25,18 @@ if ($tipo && in_array($tipo, ['presencial', 'online'], true)) {
 }
 
 $whereSQL = 'WHERE ' . implode(' AND ', $where);
-$stmt = $db->prepare("SELECT c.* FROM cursos c $whereSQL ORDER BY c.data_hora ASC, c.criado_em DESC");
+$stmt = $db->prepare("
+    SELECT c.*, COALESCE(ic.total, 0) AS inscritos_count
+    FROM cursos c
+    LEFT JOIN (
+        SELECT curso_id, COUNT(*) AS total
+        FROM inscricoes
+        WHERE status_pagamento != 'cancelado'
+        GROUP BY curso_id
+    ) ic ON ic.curso_id = c.id
+    $whereSQL
+    ORDER BY c.data_hora ASC, c.criado_em DESC
+");
 $stmt->execute($params);
 $cursos = $stmt->fetchAll();
 
@@ -145,10 +156,7 @@ require_once __DIR__ . '/includes/header.php';
             <?php if ($curso['vagas'] !== null): ?>
             <span class="badge-vagas">
               <?php
-              $stmt2 = $db->prepare("SELECT COUNT(*) FROM inscricoes WHERE curso_id = ? AND status_pagamento != 'cancelado'");
-              $stmt2->execute([$curso['id']]);
-              $inscritos = (int)$stmt2->fetchColumn();
-              $vagas_rest = max(0, $curso['vagas'] - $inscritos);
+              $vagas_rest = max(0, $curso['vagas'] - (int)$curso['inscritos_count']);
               echo $vagas_rest . ' vaga' . ($vagas_rest !== 1 ? 's' : '');
               ?>
             </span>

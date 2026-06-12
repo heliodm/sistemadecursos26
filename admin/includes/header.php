@@ -119,9 +119,12 @@ if (isAdmin()) {
       <div class="name"><?= h($usuario['nome']) ?></div>
       <div class="role"><?= $usuario['tipo'] === 'admin' ? 'Administrador' : 'Usuário' ?></div>
     </div>
-    <a href="<?= BASE_PATH ?>/logout.php" class="logout-btn" title="Sair" data-bs-toggle="tooltip">
-      <i class="bi bi-box-arrow-right"></i>
-    </a>
+    <form method="POST" action="<?= BASE_PATH ?>/logout.php" style="display:contents;">
+      <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+      <button type="submit" class="logout-btn" title="Sair" style="background:none;border:none;padding:0;cursor:pointer;">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </form>
   </div>
 </aside>
 
@@ -148,10 +151,14 @@ if (isAdmin()) {
       <i class="bi bi-box-arrow-up-right"></i>
       <span class="d-none d-md-inline">Ver Site</span>
     </a>
-    <a href="<?= BASE_PATH ?>/logout.php" class="topbar-btn" onclick="return confirm('Deseja sair do sistema?')">
-      <i class="bi bi-box-arrow-right"></i>
-      <span class="d-none d-sm-inline">Sair</span>
-    </a>
+    <form method="POST" action="<?= BASE_PATH ?>/logout.php" style="display:contents;"
+          onsubmit="return confirm('Deseja sair do sistema?')">
+      <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+      <button type="submit" class="topbar-btn" style="background:none;border:none;cursor:pointer;">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-sm-inline">Sair</span>
+      </button>
+    </form>
   </div>
 </header>
 

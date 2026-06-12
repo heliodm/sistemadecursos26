@@ -251,6 +251,30 @@ $nCanc = count(array_filter($inscricoes, fn($i) => $i['status_pagamento'] === 'c
             <strong style="color:var(--primary);font-size:.82rem;">Data de Inscrição</strong>
             <div><?= formatarData($detalhe['criado_em'], 'd/m/Y H:i') ?></div>
           </div>
+          <?php if ($detalhe['comprovante']): ?>
+          <div class="col-12">
+            <strong style="color:var(--primary);font-size:.82rem;">Comprovante de Pagamento</strong>
+            <?php
+            $compUrl = urlImagem($detalhe['comprovante']);
+            $isPdf   = str_ends_with(strtolower((string)$detalhe['comprovante']), '.pdf');
+            ?>
+            <div class="mt-1">
+              <?php if ($compUrl && !$isPdf): ?>
+              <a href="<?= h($compUrl) ?>" target="_blank">
+                <img src="<?= h($compUrl) ?>" alt="Comprovante"
+                     style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #ddd;cursor:zoom-in;">
+              </a>
+              <?php elseif ($compUrl): ?>
+              <a href="<?= h($compUrl) ?>" target="_blank" class="btn btn-sm"
+                 style="background:var(--primary);color:#fff;border-radius:6px;">
+                <i class="bi bi-file-pdf me-1"></i>Abrir PDF
+              </a>
+              <?php else: ?>
+              <span style="font-size:.82rem;color:#aaa;">Arquivo não encontrado no servidor</span>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php endif; ?>
           <?php if ($detalhe['observacoes']): ?>
           <div class="col-12">
             <strong style="color:var(--primary);font-size:.82rem;">Observações</strong>

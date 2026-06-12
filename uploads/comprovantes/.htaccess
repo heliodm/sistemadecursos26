@@ -1,0 +1,7 @@
+# Bloquear execução de PHP em uploads
+<FilesMatch "\.ph(p[3457]?|t|tml|ar)$">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>
+
+Options -Indexes
