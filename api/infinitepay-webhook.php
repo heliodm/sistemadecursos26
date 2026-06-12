@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/config/config.php';
 require_once dirname(__DIR__) . '/config/database.php';
 require_once dirname(__DIR__) . '/includes/functions.php';
+require_once dirname(__DIR__) . '/includes/infinitepay.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -12,6 +13,9 @@ if (empty($rawBody)) {
     exit;
 }
 
+// Defesa em profundidade: se um segredo de webhook estiver configurado, valida a
+// assinatura HMAC. A confirmação real, porém, NÃO depende disso — ela é feita
+// re-verificando o pagamento direto na API da InfinitePay (abaixo).
 $secret = getConfig('infinitepay_webhook_secret');
 if (!empty($secret)) {
     $sig      = $_SERVER['HTTP_X_CALLBACK_SIGNATURE'] ?? '';
@@ -30,21 +34,25 @@ if (!is_array($payload)) {
     exit;
 }
 
-$orderNsu = $payload['order_nsu'] ?? '';
+$orderNsu    = (string)($payload['order_nsu'] ?? '');
+$invoiceSlug = (string)($payload['invoice_slug'] ?? '');
+$txNsu       = (string)($payload['transaction_nsu'] ?? '');
 
-// InfinitePay sends paid_amount (not a boolean "paid") on successful checkout webhooks
-$pago = !empty($payload['paid'])
-     || (isset($payload['paid_amount']) && (int)$payload['paid_amount'] > 0)
-     || (isset($payload['status']) && strtolower($payload['status']) === 'paid');
-
-if ($orderNsu && $pago) {
+// IMPORTANTE: nunca confiar no corpo do webhook para confirmar pagamento.
+// order_nsu (INS-{id}) é sequencial e adivinhável; um POST forjado poderia
+// marcar qualquer inscrição como paga. Confirmamos consultando a própria
+// InfinitePay via payment_check, que só retorna pago quando houve pagamento real.
+if ($orderNsu !== '') {
     try {
-        $db = getDB();
-        $stmt = $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE payment_id = ? AND status_pagamento = 'pendente'");
-        $stmt->execute([$orderNsu]);
+        $ipay = new InfinitePay();
+        if ($ipay->isConfigured() && $ipay->verificarPagamento($orderNsu, $invoiceSlug, $txNsu)) {
+            $db = getDB();
+            $stmt = $db->prepare("UPDATE inscricoes SET status_pagamento = 'confirmado' WHERE payment_id = ? AND status_pagamento = 'pendente'");
+            $stmt->execute([$orderNsu]);
+        }
     } catch (\Throwable $e) {
-        http_response_code(400); // 400 triggers InfinitePay retry
-        echo json_encode(['success' => false, 'message' => 'db_error']);
+        http_response_code(400); // 400 faz a InfinitePay reenviar o webhook
+        echo json_encode(['success' => false, 'message' => 'processing_error']);
         exit;
     }
 }
